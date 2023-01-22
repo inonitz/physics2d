@@ -13,14 +13,15 @@ ASMC 	 = as
 ASMFLAGS = -O0
 CXXFLAGS =  -c \
 			-pedantic \
-			-Werror \
 			-Wall \
 			-Wextra \
+			-Wgnu-anonymous-struct \
+			-Wnested-anon-types \
+			-Werror \
 			-march=native \
 			-msse4.1 \
 			-msse4.2 \
 			-mavx \
-			-mavx2 \
 
 
 CVERSION   = c11
@@ -47,6 +48,7 @@ LDFLAGS = \
 		-lopengl32 \
 
 
+#			-mavx2 \
 # 		-v \
 # 		-static-libgcc \
 # 		-static-libstdc++ \

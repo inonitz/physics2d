@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdexcept>
 #include <atomic>
-#include <exception>
 
 
 #ifndef aligned_alloc

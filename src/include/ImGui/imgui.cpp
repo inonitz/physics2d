@@ -4188,7 +4188,6 @@ void ImGui::Initialize(ImGuiContext* context)
     // Create default viewport
     ImGuiViewportP* viewport = IM_NEW(ImGuiViewportP)();
     g.Viewports.push_back(viewport);
-
 #ifdef IMGUI_HAS_DOCK
 #endif
 
