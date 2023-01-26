@@ -1,6 +1,6 @@
-COMPILER_BASE_FOLDER = C:/CTools/mingw64-msvcrt
+COMPILER_BASE_FOLDER = "C:/Program Files/Programming Utillities/mingw-ucrt"
 PROJECT_FOLDER_BASE  = $(shell pwd)
-PROJECT_FOLDER       = $(shell cygpath -m $(PROJECT_FOLDER_BASE))
+PROJECT_FOLDER       = "$(shell cygpath -m $(PROJECT_FOLDER_BASE))"
 
 
 PROJNAME = mglw
@@ -13,15 +13,11 @@ ASMC 	 = as
 ASMFLAGS = -O0
 CXXFLAGS =  -c \
 			-pedantic \
+			-Werror \
 			-Wall \
 			-Wextra \
-			-Wgnu-anonymous-struct \
-			-Wnested-anon-types \
-			-Werror \
 			-march=native \
-			-msse4.1 \
-			-msse4.2 \
-			-mavx \
+			-mtune=native \
 
 
 CVERSION   = c11
@@ -48,7 +44,10 @@ LDFLAGS = \
 		-lopengl32 \
 
 
-#			-mavx2 \
+#		-msse4.1 \
+#		-msse4.2 \
+#		-mavx \
+#		-mavx2 \
 # 		-v \
 # 		-static-libgcc \
 # 		-static-libstdc++ \

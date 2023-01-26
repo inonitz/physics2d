@@ -8,8 +8,7 @@ bool loadFile(
 	char*		out   /* Where to place the file contents (Buffer of Min-Size 'size')      */
 ) {
 	namespace fs = std::filesystem;
-	printf("loadFile() => Path is %s\n", path);
-	ifcrash(!fs::exists(path));
+	ifcrashmsg(!fs::exists(path), "loadFile() => Couldn't find Path[%s]\n", path);
 
 	FILE*  file;
 	size_t fsize = fs::file_size(path);
@@ -19,7 +18,7 @@ bool loadFile(
 		return false;
 	}
 	file = fopen(path, "rb");
-	ifcrash(file == nullptr);
+	ifcrashmsg(file == nullptr, "Couldn't get handle to file at Path[%s]\n", path);
 
 
 	fsize = fread(out, sizeof(u8), *size, file);
@@ -30,8 +29,6 @@ bool loadFile(
 
 
 	fsize = fclose(file);
-	ifcrashdo(fsize, {
-		printf("Couldn't close file handle. ERROR CODE: %llu\n", fsize);
-	});
+	ifcrashmsg(fsize, "Couldn't close file handle. ERROR CODE: %llu\n", fsize);
 	return true;
 }

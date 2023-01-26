@@ -1,5 +1,5 @@
 # WORKING_DIR_ABS_PATH=/cygdrive/c/"Program Files/Programming Utillities"/Cygwin/home/themc/mglw
-WORKING_DIR_ABS_PATH=$(shell pwd)
+WORKING_DIR_ABS_PATH="$(shell pwd)"
 SCRIPT_PATH=.vscode/clangd_cc
 SCRIPT_NAME=gen_commands.sh
 SCRIPT_FULL_ADDRESS=$(WORKING_DIR_ABS_PATH)/$(SCRIPT_PATH)/$(SCRIPT_NAME)

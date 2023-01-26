@@ -1,13 +1,12 @@
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdexcept>
 #include <atomic>
 
 
 #ifndef aligned_alloc
-	#define aligned_alloc(align, size) _aligned_malloc(size, align)
+	#define aligned_alloc(size, align) _aligned_malloc(size, align)
 	#define aligned_free(ptr) _aligned_free(ptr)
 #endif
 
@@ -105,16 +104,16 @@ extern std::atomic<size_t> markflag;
 #ifdef _DEBUG
 
 #define mark() \
-	{ printf("mark %lu here: %s line %u\n", markflag.load(), __FILE__, __LINE__); ++markflag; } \
+	{ printf("mark %llu here: %s line %u\n", markflag.load(), __FILE__, __LINE__); ++markflag; } \
 
 
 #define markstr(str) \
-	{ printf("mark %lu here: %s line %u extra: %s\n", markflag.load(), __FILE__, __LINE__, str); ++markflag; } \
+	{ printf("mark %llu here: %s line %u extra: %s\n", markflag.load(), __FILE__, __LINE__, str); ++markflag; } \
 
 
 #define markfmt(str, ...) \
 	{ \
-		printf("mark %lu here: %s line %u extra: ", markflag.load(), __FILE__, __LINE__); \
+		printf("mark %llu here: %s line %u extra: ", markflag.load(), __FILE__, __LINE__); \
 		printf(str, __VA_ARGS__); \
 		++markflag; \
 	} \
@@ -130,8 +129,9 @@ extern std::atomic<size_t> markflag;
 #endif
 
 /* align_malloc not really correct, should alloc size+alignment then return the ptr aligned */
-#define align_malloc(size, alignment) malloc(  alignment * ( (size/alignment) + boolean(size%alignment) )  )
-#define amalloc_t(type, size, align) (type*)aligned_alloc(align, size)
+// #define align_malloc(size, alignment) malloc(  alignment * ( (size/alignment) + boolean(size%alignment) )  )
+#define amalloc_t(type, size, align) (type*)_mm_malloc(size, align)
+#define afree_t(ptr) _mm_free(ptr)
 
 
 #define boolean(arg) !!(arg)

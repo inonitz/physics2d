@@ -1,6 +1,6 @@
-#include "main/basic.hpp"
+#include "main/basicpp.hpp"
 
 
 int main() {
-	return basic();
+	return basicpp();
 }
