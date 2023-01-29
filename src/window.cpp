@@ -8,7 +8,7 @@
 
 void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 {
-	glfwSetErrorCallback(*glfwOverride.errorEvent);
+	glfwSetErrorCallback(glfwOverride.errorEvent);
 	ifcrashdo(!glfwInit(), 
 	{ 
 		printf("GLFW Initialization Failed!\n"); 
@@ -33,9 +33,12 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 	glfwMakeContextCurrent(handle);
 	glfwSwapInterval(0); // Disable vsync
 	
-	glfwSetFramebufferSizeCallback(handle, *glfwOverride.windowSizeEvent);
-	glfwSetKeyCallback(handle, *glfwOverride.keyEvent);
-
+	wh = { width, height };
+	glfwSetFramebufferSizeCallback(handle, glfwOverride.windowSizeEvent);
+	glfwSetKeyCallback(handle, glfwOverride.keyEvent);
+	glfwSetCursorPosCallback(handle, glfwOverride.mousePosEvent);
+	glfwSetMouseButtonCallback(handle, glfwOverride.mouseButtonEvent);
+	glfwSetWindowUserPointer(handle, this);
 
 	ifcrashdo( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), 
 	{ 
@@ -71,14 +74,16 @@ void window::destroy()
 }
 
 
-void window::procUpcomingEvents() const 
+void window::procUpcomingEvents() 
 {
 	/* begin frame */
-	glfwPollEvents();
-	
+	// markstr("GLFW ==> Begin Frame!")
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	
+	deltaTime[0] = deltaTime[1];
+	deltaTime[1] = static_cast<f32>( glfwGetTime() );
 	return;
 }
 
@@ -89,6 +94,10 @@ void window::procOngoingEvents() const
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+	update_mouse_callback_states();
+	update_key_callback_states();
+	glfwPollEvents();
 	glfwSwapBuffers(handle);
+	// markstr("GLFW ==> Swapped Buffers!");
 	return;
 }

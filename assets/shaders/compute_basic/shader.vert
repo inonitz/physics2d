@@ -4,8 +4,13 @@ layout(location = 1) in  vec2 vTexCoord;
 layout(location = 0) out vec2 texCoords;
 
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+
 void main()
 {
-	gl_Position = vPos;
+	gl_Position = projection * view * model * vPos;
 	texCoords   = vTexCoord;
 }

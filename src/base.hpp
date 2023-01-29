@@ -54,6 +54,14 @@ extern std::atomic<size_t> markflag;
 #define debug(...) { __VA_ARGS__; }
 #define debugnobr(...) __VA_ARGS__;
 
+
+#define debug_message(str, ...) \
+{ \
+	printf("[_DEBUG] "); \
+	printf(str, __VA_ARGS__); \
+} \
+
+
 #define ifcrashmsg(condition, str, ...) \
 	if(!!(condition)) { \
 		fprintf(stderr, "File %s Line %u\n    Message: \n", __FILE__, __LINE__); \
@@ -92,6 +100,7 @@ extern std::atomic<size_t> markflag;
 #else
 #define debug(...)
 #define debugnobr(...)
+#define debug_message(str, ...) 
 #define ifcrashmsg(condition, str, ...) {}
 #define ifcrashdbg(condition) 			{}
 #define ifcrashdo(condition, action) ifcrash(condition);

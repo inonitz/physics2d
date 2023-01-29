@@ -31,6 +31,11 @@ template<typename T> constexpr T round2(T v) {
 }
 
 
+template<typename T> constexpr T radians(T v) {
+	return v * (T)2.777778e-03; /* value * (1 / 360) */
+}
+
+
 
 
 template<typename T, size_t length> class Vector
@@ -45,7 +50,7 @@ public:
 	Vector() { zero(); }
 	Vector(ref<T> defaultVal) 
 	{
-		for(size_t i = 0; i < length; i <<= 1)  {
+		for(size_t i = 0; i < length; i += 2)  {
 			__data[i    ] = defaultVal;
 			__data[i + 1] = defaultVal;
 		}
@@ -130,7 +135,7 @@ template<typename T, size_t len> T dot_prod(
 		tmp[i + 2] = a[i + 2] * b[i + 2];
 		tmp[i + 3] = a[i + 3] * b[i + 3];
 		tmp[i    ] = tmp[i	  ] + tmp[i + 1];
-		tmp[i + 1] = tmp[i + 1] + tmp[i + 2];
+		tmp[i + 1] = tmp[i + 2] + tmp[i + 3];
 		tmp[i] 	   = tmp[i] 	+ tmp[i + 1];
 		
 		aggregate += tmp[i];
@@ -157,9 +162,9 @@ template<typename T> void cross_prod(
 	Vector<T, 3> const& b, 
 	Vector<T, 3>&       dst
 ) {
-	dst[0] = a[2] * b[3] - b[2] * a[3];
-	dst[1] = a[3] * b[1] - b[3] * a[1];
-	dst[2] = a[1] * b[2] - b[1] * a[2];
+	dst[0] = a[1] * b[2] - b[1] * a[2];
+	dst[1] = a[2] * b[0] - b[2] * a[0];
+	dst[2] = a[0] * b[1] - b[0] * a[1];
 	return;
 }
 
@@ -181,9 +186,9 @@ struct vec##aptn \
 \
 \
     vec##aptn() : mem() {} \
-    vec##aptn(dtype value) : mem(value) {} \
+    explicit vec##aptn(dtype value) : mem(value) {} \
     declare_n_args_ctor \
-    vec##aptn(const dtype* validAddr) { \
+    explicit vec##aptn(const dtype* validAddr) { \
         memcpy(mem.begin(), validAddr, mem.bytes()); \
         return; \
     } \
@@ -251,7 +256,10 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	2,
 	float, 
 	2f, 
-	struct { float x; float y; }, 
+	struct { float x;   float y;     };
+	struct { float u;   float v;     };
+	struct { float yaw; float pitch; };
+	struct { float m0;  float m1;    },
 	vec2f(float a, float b) 
 	{ 
 		x = a; 
@@ -267,8 +275,10 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	4,
 	float,
 	4f,
-	struct { float x; float y; float z; float w; }; 
-	struct { float r; float g; float b; float a; },
+	struct { float x;   float y;     float z;    float w;     }; 
+	struct { float r;   float g;     float b;    float a;     };
+	struct { float yaw; float pitch; float roll; float theta; };
+	struct { float m0;  float m1;    float m2;   float m3;    },
 	vec4f(float a, float b, float c, float d) 
 	{ 
 		x = a; 
@@ -286,8 +296,10 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	float,
 	3f,
-	struct { float x; float y; float z; }; 
-	struct { float r; float g; float b; };
+	struct { float x;   float y;     float z;    }; 
+	struct { float r;   float g;     float b;    };
+	struct { float yaw; float pitch; float roll; };
+	struct { float m0;  float m1;    float m2;   };
 	vec4f homogenised,
 	vec3f(float a, float b, float c) 
 	{ 
@@ -310,10 +322,18 @@ struct mat4f
 		Vector<float, 16> mem;
 		struct { vec4f row[4];  };
 		struct { vec3f row3[4]; };
-		float   x0, y0, z0, w0,
-				x1, y1, z1, w1, 
-				x2, y2, z2, w2, 
-				x3, y3, z3, w3;
+		struct {
+			float   x0, y0, z0, w0,
+					x1, y1, z1, w1, 
+					x2, y2, z2, w2, 
+					x3, y3, z3, w3;
+		};
+		struct {
+			float   m00, m01, m02, m03,
+					m10, m11, m12, m13, 
+					m20, m21, m22, m23, 
+					m30, m31, m32, m33;
+		};
 	};
 
 
@@ -480,6 +500,15 @@ void inv_lookAt(
 	vec3f const& up,
 	mat4f& 		 out
 );
+
+
+/*
+	Same as the previous inv_lookAt(),
+	except it takes the produced matrix 
+	instead of the args to the original matrix.
+*/
+void inv_lookAt(const mat4f& in, mat4f& out);
+
 
 
 /* 
