@@ -4,6 +4,12 @@
 #include <array>
 
 
+
+/*
+	NOTICE:
+	Matrices/Vectors in this library are stored in ROW MAJOR ORDER (LINEARLY IN MEMORY); BUT!
+	The matrices themselves are column-major, and are expected to be multiplied as such. 
+*/
 #define NAMESPACE_MATH_BEGIN namespace math {
 #define NAMESPACE_MATH_END   }
 
@@ -32,7 +38,7 @@ template<typename T> constexpr T round2(T v) {
 
 
 template<typename T> constexpr T radians(T v) {
-	return v * (T)2.777778e-03; /* value * (1 / 360) */
+	return v * (T)0.017453292519943295; /* value * PI * (1 / 180) */
 }
 
 
@@ -422,10 +428,54 @@ void MultiplyMat4Vec4(vec4f& a, mat4f& b, vec4f& out);
 void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out);
 
 
+/*
+	Returns the following matrix in mat4f& out:
+	[ 1, 0, 0, 0],
+	[ 0, 1, 0, 0],
+	[ 0, 0, 1, 0],
+	[ 0, 0, 0, 1]
+*/
 void identity  (					    mat4f& out);
+
+
+/*
+	Returns the following matrix in mat4f& out (where t = translate):
+	[ 1, 0, 0, t.x],
+	[ 0, 1, 0, t.y],
+	[ 0, 0, 1, t.z],
+	[ 0, 0, 0, 1  ]
+*/
 void translate (vec3f const& translate, mat4f& out);
+
+
+/*
+	Returns the following matrix in mat4f& out (where s = scale):
+	[ s.x, 0,   0,   0],
+	[  0, s.y,  0,   0],
+	[  0,  0,  s.z,  0],
+	[  0,  0,   0,   1]
+*/
 void scale     (vec3f const& scale,     mat4f& out);
+
+/*
+	Returns the following matrix in mat4f& out:
+	given mat4f const& in = {
+		m00, m01, m02, m03,
+		m04, m05, m06, m07,
+		m08, m09, m10, m11,
+		m12, m13, m14, m15
+	} out ==>
+	[ m00, m04, m08, m12 ],
+	[ m01, m05, m09, m13 ],
+	[ m02, m06, m10, m14 ],
+	[ m03, m07, m11, m15 ]
+*/
 void transposed(mat4f const& in, 		mat4f& out);
+
+
+/*
+	same as transposed(), except that it expects only one argument (the matrix to transpose)
+*/
 void transpose (					  mat4f& inout);
 
 
@@ -489,10 +539,10 @@ void lookAt(
 
 /* 
 	Inverse of a homogenous transform matrix (V) =
-		[ xaxis.x  xaxis.y  xaxis.z  eye.x ]
-		[ yaxis.x  yaxis.y  yaxis.z  eye.y ]
-		[ zaxis.x  zaxis.y  zaxis.z  eye.z ]
-		[    0 	      0 	   0       1   ]
+		[ xaxis.x  xaxis.y  xaxis.z  dot(xaxis, eye) ]
+		[ yaxis.x  yaxis.y  yaxis.z  dot(yaxis, eye) ]
+		[ zaxis.x  zaxis.y  zaxis.z  dot(zaxis, eye) ]
+		[    0 	      0 	   0       	    1    	 ]
 */
 void inv_lookAt(
 	vec3f const& eyePos, 
@@ -505,7 +555,7 @@ void inv_lookAt(
 /*
 	Same as the previous inv_lookAt(),
 	except it takes the produced matrix 
-	instead of the args to the original matrix.
+	instead of the args to the original matrix. (Still doesn't work, when needed [eventually then fix this])
 */
 void inv_lookAt(const mat4f& in, mat4f& out);
 

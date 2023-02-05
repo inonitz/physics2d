@@ -4,6 +4,6 @@
 uint8_t run_once  = 0;
 uint16_t finished = 0;
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
 	std::atomic<size_t> markflag{0};
 #endif

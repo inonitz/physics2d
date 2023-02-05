@@ -28,6 +28,17 @@ struct defaultCallbacks
 
 
 enum class KeyCode : u8 {
+	ESCAPE,
+	NUM0,
+	NUM1,
+	NUM2,
+	NUM3,
+	NUM4,
+	NUM5,
+	NUM6,
+	NUM7,
+	NUM8,
+	NUM9,
 	W,
 	A,
 	S,
@@ -42,17 +53,18 @@ enum class KeyCode : u8 {
 	T,
 	G,
 	V,
-	ESCAPE,
-	NUM0,
-	NUM1,
-	NUM2,
-	NUM3,
-	NUM4,
-	NUM5,
-	NUM6,
-	NUM7,
-	NUM8,
-	NUM9,
+	B,
+	H,
+	Y,
+	U,
+	J,
+	N,
+	M,
+	K,
+	I,
+	O,
+	L,
+	P,
 	KEY_MAX
 };
 
@@ -66,10 +78,11 @@ enum class MouseButton : u8 {
 
 
 enum class InputState : u8 {
-	DEFAULT,
-	RELEASE,
-	PRESS,
-	MAX
+	DEFAULT = 0, /* mapping is (1 << GLFW_KEY_STATE) */
+	RELEASE = 1,
+	PRESS   = 2, 
+	REPEAT  = 4,
+	MAX     = 8
 };
 
 
@@ -100,6 +113,6 @@ void update_mouse_callback_states();
 
 InputState getKeyState(KeyCode key);
 InputState getMouseButtonState(MouseButton key);
-std::array<f64, 2> const& getCurrentFrameCursorPos();
-std::array<f64, 2> const& getPreviousFrameCursorPos();
-std::array<f64, 2> 		  getCursorDelta(); 
+template<typename T> std::array<T, 2> getCurrentFrameCursorPos();
+template<typename T> std::array<T, 2> getPreviousFrameCursorPos();
+template<typename T> std::array<T, 2> getCursorDelta();

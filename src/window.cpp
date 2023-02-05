@@ -40,6 +40,8 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 	glfwSetMouseButtonCallback(handle, glfwOverride.mouseButtonEvent);
 	glfwSetWindowUserPointer(handle, this);
 
+
+	glfwSetCursorPos(handle, static_cast<double>(width) * 0.5, static_cast<double>(height) * 0.5);
 	ifcrashdo( !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), 
 	{ 
 		printf("Couldn't initialize GLAD\n");
@@ -71,6 +73,16 @@ void window::destroy()
 
     glfwDestroyWindow(handle);
     glfwTerminate();
+}
+
+
+void window::lockCursor() const {
+	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+
+void window::unlockCursor() const {
+	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 

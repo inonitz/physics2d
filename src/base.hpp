@@ -3,25 +3,86 @@
 #include <stdio.h>
 #include <stdexcept>
 #include <atomic>
-
-
-#ifndef aligned_alloc
-	#define aligned_alloc(size, align) _aligned_malloc(size, align)
-	#define aligned_free(ptr) _aligned_free(ptr)
+#ifndef USE_MARKER_IN_RELEASE_MODE
+#define USE_MARKER_IN_RELEASE_MODE false
 #endif
 
 
 
-#define ifcrash(condition) \
+
+#if defined( __GNUC__ ) || defined( __MINGW__ ) || defined ( __clang__ )
+#define likely(cond)    __builtin_expect( boolean(cond), 1 )
+#define unlikely(cond)  __builtin_expect( boolean(cond), 0 )
+
+#pragma GCC diagnostic push
+
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define GET_ARG_COUNT(...) INTERNAL_GET_ARG_COUNT_PRIVATE(0, ## __VA_ARGS__, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define INTERNAL_GET_ARG_COUNT_PRIVATE(_0, _1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, _9_, _10_, _11_, _12_, _13_, _14_, _15_, _16_, _17_, _18_, _19_, _20_, _21_, _22_, _23_, _24_, _25_, _26_, _27_, _28_, _29_, _30_, _31_, _32_, _33_, _34_, _35_, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, count, ...) count
+
+static_assert(GET_ARG_COUNT() == 0, "GET_ARG_COUNT() failed for 0 arguments");
+static_assert(GET_ARG_COUNT(1) == 1, "GET_ARG_COUNT() failed for 1 argument");
+static_assert(GET_ARG_COUNT(1,2) == 2, "GET_ARG_COUNT() failed for 2 arguments");
+static_assert(GET_ARG_COUNT(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70) == 70, "GET_ARG_COUNT() failed for 70 arguments");
+
+#pragma GCC diagnostic pop
+
+
+
+
+#elif defined( _MSC_VER )
+#define 	likely(cond)
+#define 	unlikely(cond)
+
+/* Code Expanded to Compiler-specific defines From: https://stackoverflow.com/questions/2124339/c-preprocessor-va-args-number-of-arguments?rq=1 */
+#define GET_ARG_COUNT(...)  INTERNAL_EXPAND_ARGS_PRIVATE(INTERNAL_ARGS_AUGMENTER(__VA_ARGS__))
+#define INTERNAL_ARGS_AUGMENTER(...) unused, __VA_ARGS__
+#define INTERNAL_EXPAND(x) x
+#define INTERNAL_EXPAND_ARGS_PRIVATE(...) INTERNAL_EXPAND(INTERNAL_GET_ARG_COUNT_PRIVATE(__VA_ARGS__, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+#define INTERNAL_GET_ARG_COUNT_PRIVATE(_1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, _9_, _10_, _11_, _12_, _13_, _14_, _15_, _16_, _17_, _18_, _19_, _20_, _21_, _22_, _23_, _24_, _25_, _26_, _27_, _28_, _29_, _30_, _31_, _32_, _33_, _34_, _35_, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, count, ...) count
+
+
+static_assert(GET_ARG_COUNT() == 0, "GET_ARG_COUNT() failed for 0 arguments");
+static_assert(GET_ARG_COUNT(1) == 1, "GET_ARG_COUNT() failed for 1 argument");
+static_assert(GET_ARG_COUNT(1,2) == 2, "GET_ARG_COUNT() failed for 2 arguments");
+static_assert(GET_ARG_COUNT(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70) == 70, "GET_ARG_COUNT() failed for 70 arguments");
+
+
+/* For easier allocations in msvc, aligned_malloc already defined in most major compilers. */
+#define aligned_alloc(size, align) _aligned_malloc(size, align)
+#define aligned_free(ptr) _aligned_free(ptr)
+
+#else
+#   warning "Unknown compiler, there might be some troubles during compilation, such as undefined macros.
+#endif
+
+
+
+
+#define ifcrash_generic(condition, name, ...) /* Using this as a common denominator across all ifcrash* macros. */ \
 	if(!!(condition)) { \
-		fprintf(stderr, "File %s Line %u\n", __FILE__, __LINE__); \
-		throw std::runtime_error("An 'ifcrash' check statement was triggered"); \
+		fprintf(stderr, "[IFCRASH_%s] [FROM] %s [LINE] %u\n", name, __FILE__, __LINE__); \
+		__VA_ARGS__; \
+		throw std::runtime_error(""); \
 	} \
-	\
+
+#define ifcrash(condition) ifcrash_generic(condition, "DEFAULT", {});
+
+
+#define mark_generic(atomic_8byte_counter, ...) \
+	{ \
+		printf("[MARKER %llu] [FROM] %s [Line] %u", atomic_8byte_counter.load(),  __FILE__, __LINE__); \
+		if constexpr (GET_ARG_COUNT(__VA_ARGS__) > 1) { /*  */ \
+			printf(" [ADDITIONAL_INFO] "); printf(__VA_ARGS__); \
+		} \
+		printf("\n"); \
+	} \
 \
 
 
 extern uint8_t run_once;
+#define RESET_RUN_ONCE_COUNT() run_once = 0;
 #define __once(code_block) \
 	if(!boolean(run_once)) { \
 		{ \
@@ -30,10 +91,9 @@ extern uint8_t run_once;
 		} \
 	} \
 
-#define RESET_RUN_ONCE_COUNT() run_once = 0;
-
 
 extern uint16_t finished;
+#define RESET_RUN_TIMES_COUNT() finished = 0;
 #define run_block(times, code_block) \
 	if(boolean((uint16_t)times - finished)) { \
 		{ \
@@ -42,105 +102,63 @@ extern uint16_t finished;
 		} \
 	} \
 
-#define RESET_RUN_TIMES_COUNT finished = 0;
 
 
 
 
-#ifdef _DEBUG
-extern std::atomic<size_t> markflag;
-
+#if defined(_DEBUG)
 
 #define debug(...) { __VA_ARGS__; }
 #define debugnobr(...) __VA_ARGS__;
 
 
-#define debug_message(str, ...) \
-{ \
-	printf("[_DEBUG] "); \
-	printf(str, __VA_ARGS__); \
-} \
+#define debug_messagefmt(str, ...) { printf("[_DEBUG] "); printf(str, __VA_ARGS__); }
+#define debug_message(str) 		   { printf("[_DEBUG] "); printf(str); 				}
 
 
-#define ifcrashmsg(condition, str, ...) \
-	if(!!(condition)) { \
-		fprintf(stderr, "File %s Line %u\n    Message: \n", __FILE__, __LINE__); \
-		fprintf(stderr, str, __VA_ARGS__); \
-		throw std::runtime_error("An 'ifcrashmsg' check statement was triggered"); \
-	} \
-	\
-\
+#define ifcrashdbg(condition) ifcrash_generic(condition, "MESSAGE", {});
+#define ifcrashfmt(condition, str, ...) ifcrash_generic(condition, "MESSAGE", { \
+		printf("[IFCRASH_MESSAGE] Extra: "); \
+		printf(str, __VA_ARGS__); \
+	});
 
-#define ifcrashdbg(condition) \
-	if(!!(condition)) { \
-		fprintf(stderr, "File %s Line %u\n", __FILE__, __LINE__); \
-		throw std::runtime_error("An 'ifcrashdebug' check statement was triggered"); \
-	} \
-	\
-\
-
-#define ifcrashdo(condition, action) \
-	if(!!(condition)) { \
-		fprintf(stderr, "File %s Line %u\n    Message: \n", __FILE__, __LINE__); \
+#define ifcrashdo(condition, action) ifcrash_generic(condition, "INJECT", { action; });
+#define ifcrashfmt_do(condition, action, str, ...) ifcrash_generic(condition, "MESSAGE_INJECT", { \
+		printf("[IFCRASH_MESSAGE] Extra: "); printf(str, __VA_ARGS__); \
 		{ action; } \
-		throw std::runtime_error("An 'ifcrashmsg' check statement was triggered"); \
-	} \
-\
-
-#define ifcrashmsg_do(condition, action, str, ...) \
-	if(!!(condition)) { \
-		fprintf(stderr, "File %s Line %u\n    Message: \n", __FILE__, __LINE__); \
-		fprintf(stderr, str, __VA_ARGS__); \
-		{ action; } \
-		throw std::runtime_error("An 'ifcrashmsg' check statement was triggered"); \
-	} \
-	\
-\
+	});
 
 #else
+
 #define debug(...)
 #define debugnobr(...)
-#define debug_message(str, ...) 
-#define ifcrashmsg(condition, str, ...) {}
+#define debug_messagefmt(str, ...)
+#define debug_message(str)
 #define ifcrashdbg(condition) 			{}
-#define ifcrashdo(condition, action) ifcrash(condition);
-#define ifcrashmsg_do(condition, action, str, ...) {}
+#define ifcrashfmt(condition, str, ...) {}
+#define ifcrashdo(condition, action) 			   ifcrash(condition);
+#define ifcrashfmt_do(condition, action, str, ...) ifcrash(condition);
 
 #endif
 
 
 
-#ifdef _DEBUG
 
-#define mark() \
-	{ printf("mark %llu here: %s line %u\n", markflag.load(), __FILE__, __LINE__); ++markflag; } \
+#if defined(_DEBUG) || USE_MARKER_IN_RELEASE_MODE
+extern std::atomic<size_t> markflag;
 
-
-#define markstr(str) \
-	{ printf("mark %llu here: %s line %u extra: %s\n", markflag.load(), __FILE__, __LINE__, str); ++markflag; } \
-
-
-#define markfmt(str, ...) \
-	{ \
-		printf("mark %llu here: %s line %u extra: ", markflag.load(), __FILE__, __LINE__); \
-		printf(str, __VA_ARGS__); \
-		++markflag; \
-	} \
-
+#define mark() mark_generic(markflag, "");
+#define markstr(str) mark_generic(markflag, "%s", str);
+#define markfmt(str, ...) mark_generic(markflag, str, __VA_ARGS__);
 
 #else
-
-#define mark() 		 	  do {} while(0);
-#define markstr(str) 	  do {} while(0);
-#define markfmt(str, ...) do {} while(0);
-
+#define mark()
+#define markstr(str)
+#define markfmt(str, ...)
 
 #endif
 
-/* align_malloc not really correct, should alloc size+alignment then return the ptr aligned */
-// #define align_malloc(size, alignment) malloc(  alignment * ( (size/alignment) + boolean(size%alignment) )  )
-#define amalloc_t(type, size, align) (type*)_mm_malloc(size, align)
-#define afree_t(ptr) _mm_free(ptr)
+
 
 
 #define boolean(arg) !!(arg)
@@ -153,17 +171,7 @@ extern std::atomic<size_t> markflag;
 #define DEFAULT16        (0xF00D)
 #define DEFAULT32        (0xBABEBABE)
 #define DEFAULT64        (0xFACADE00FACADE00)
-#define DEFAULT128       (0xBEBC0FFEEAC1DBEB)                        
-
-#if defined( __GNUC__ ) || defined( __MINGW__ ) || defined ( __clang__ )
-#define 	likely(cond)    __builtin_expect( boolean(cond), 1 )
-#define 	unlikely(cond)  __builtin_expect( boolean(cond), 0 )
-#elif defined( _MSC_VER )
-#define 	likely(cond)
-#define 	unlikely(cond)
-#else
-#   warning "Unknown compiler, there might be some troubles during compilation, such as undefined macros.
-#endif
+#define DEFAULT128       (0xBEBC0FFEEAC1DBEB)
 
 
 #define __hot           __attribute__((hot))
@@ -173,7 +181,6 @@ extern std::atomic<size_t> markflag;
 #endif
 #define notused         __attribute__((unused)) /* more appropriate for function parameters */
 #define pack            __attribute__((packed))
-#define lin(size)       __attribute__((aligned(size)))
 #define alignpack(size) __attribute__((packed, aligned(size)))
 #define alignsz(size)   __attribute__((aligned(size)))
 
@@ -184,8 +191,13 @@ extern std::atomic<size_t> markflag;
 #endif
 
 
+#define amalloc_t(type, size, align) (type*)_mm_malloc(size, align)
+#define afree_t(ptr) _mm_free(ptr)
 
-typedef char char_t;
+
+
+
+typedef char     char_t;
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;

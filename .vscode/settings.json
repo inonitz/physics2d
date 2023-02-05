@@ -112,7 +112,7 @@
     "C_Cpp.errorSquiggles": "Enabled",
     "pathToMinGW": "C:/CTools/mingw64-msvcrt",
     "clangd.arguments": [
-        "--query-driver=C:/CTools/mingw64-msvcrt/bin/x86_64-w64-mingw32-g++",
+        "--query-driver=C:/Program Files/Programming Utillities/mingw-ucrt/bin/x86_64-w64-mingw32-g++",
         // "--log=verbose",
         "-pretty",
         "--compile-commands-dir=.vscode",
@@ -121,10 +121,13 @@
     "clangd.fallbackFlags": [ 
         "--target=x86_64-w64-windows-gnu",
         "-std=c++17",
-        "--include-directory=C:/CTools/mingw64-msvcrt/include/c++/v1",
+        "--include-directory=C:/Program Files/Programming Utillities/mingw-ucrt/include/c++/v1",
         "--include-directory=${workspaceFolder}/src/include",
         "--include-directory=${workspaceFolder}/src",
         "-D_DEBUG",
     ],
     // "python.analysis.typeCheckingMode": "basic"
+    // "Path's for clangd configs: "
+    // "laptop: C:/Program Files/Programming Utillities/mingw-ucrt"
+    // "home PC: C:/CTools/mingw64-msvcrt"
 }

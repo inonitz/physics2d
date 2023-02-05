@@ -1,3 +1,4 @@
+#include <array>
 #include <glad/glad.h>
 #include "callbackHooks.hpp"
 #include <utility>
@@ -6,43 +7,85 @@
 
 
 
+static constexpr std::array<u16, (u8)KeyCode::KEY_MAX> global_glfwKeys = { 
+	GLFW_KEY_ESCAPE,
+	GLFW_KEY_0,
+	GLFW_KEY_1,
+	GLFW_KEY_2,
+	GLFW_KEY_3,
+	GLFW_KEY_4,
+	GLFW_KEY_5,
+	GLFW_KEY_6,
+	GLFW_KEY_7,
+	GLFW_KEY_8,
+	GLFW_KEY_9,
+	GLFW_KEY_W,
+	GLFW_KEY_A,
+	GLFW_KEY_S,
+	GLFW_KEY_D,
+	GLFW_KEY_Q,
+	GLFW_KEY_E,
+	GLFW_KEY_R,
+	GLFW_KEY_F,
+	GLFW_KEY_C,
+	GLFW_KEY_X,
+	GLFW_KEY_Z,
+	GLFW_KEY_T,
+	GLFW_KEY_G,
+	GLFW_KEY_V,
+	GLFW_KEY_B,
+	GLFW_KEY_H,
+	GLFW_KEY_Y,
+	GLFW_KEY_U,
+	GLFW_KEY_J,
+	GLFW_KEY_N,
+	GLFW_KEY_M,
+	GLFW_KEY_K,
+	GLFW_KEY_I,
+	GLFW_KEY_O,
+	GLFW_KEY_L,
+	GLFW_KEY_P
+};	
+
+
+static constexpr std::array<u16, (u8)MouseButton::MAX> global_glfwMouseButtons = { 
+	GLFW_MOUSE_BUTTON_LEFT,
+	GLFW_MOUSE_BUTTON_RIGHT, 
+	GLFW_MOUSE_BUTTON_MIDDLE 
+};
+
+
+
 constexpr u16 toGLFWKeyCode(KeyCode kc)
 {
-	constexpr std::array<u16, (u8)KeyCode::KEY_MAX> glfwKeys = { GLFW_KEY_W, GLFW_KEY_A, GLFW_KEY_S, GLFW_KEY_D, GLFW_KEY_Q, GLFW_KEY_E, GLFW_KEY_R, GLFW_KEY_F, GLFW_KEY_C, GLFW_KEY_X, GLFW_KEY_Z, GLFW_KEY_T, GLFW_KEY_G, GLFW_KEY_V, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_2, GLFW_KEY_3, GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, GLFW_KEY_8, GLFW_KEY_9 };	
-	return glfwKeys[static_cast<u8>(kc)];
+	return global_glfwKeys[static_cast<u8>(kc)];
 }
 
 
 constexpr KeyCode toKeyCode(u16 glfw)
 {
-	constexpr std::array<u16, (u8)KeyCode::KEY_MAX> glfwKeys  = { GLFW_KEY_W, GLFW_KEY_A, GLFW_KEY_S, GLFW_KEY_D, GLFW_KEY_Q, GLFW_KEY_E, GLFW_KEY_R, GLFW_KEY_F, GLFW_KEY_C, GLFW_KEY_X, GLFW_KEY_Z, GLFW_KEY_T, GLFW_KEY_G, GLFW_KEY_V, GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_2, GLFW_KEY_3, GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, GLFW_KEY_8, GLFW_KEY_9 };	
 	u8 i = 0;
-	
-	while(i < (u8)KeyCode::KEY_MAX && glfw != glfwKeys[i]) { ++i; }
+	while(i < (u8)KeyCode::KEY_MAX && glfw != global_glfwKeys[i]) { ++i; }
 	debugnobr(if(unlikely(i == (u8)KeyCode::KEY_MAX)) {
 		markfmt("glfwKeyToKeyCode() ==> couldn't find glfw-KeyCode of value %u\n", glfw);
 	});
-
-
 	return (KeyCode)i;
 }
 
 
 constexpr u16 toGLFWMouseButton(MouseButton button)
 {
-	constexpr std::array<u16, (u8)MouseButton::MAX> glfwMouseButtons = { GLFW_MOUSE_BUTTON_LEFT, GLFW_MOUSE_BUTTON_RIGHT, GLFW_MOUSE_BUTTON_MIDDLE };
-	return glfwMouseButtons[static_cast<u8>(button)];
+	return global_glfwMouseButtons[static_cast<u8>(button)];
 }
 
 
 constexpr MouseButton toMouseButton(u16 glfw)
 {
-	constexpr std::array<u16, (u8)MouseButton::MAX> glfwMouseButtons = { GLFW_MOUSE_BUTTON_LEFT, GLFW_MOUSE_BUTTON_RIGHT, GLFW_MOUSE_BUTTON_MIDDLE };
 	u8 i = 0;
 
-	while( i < (u8)MouseButton::MAX && glfw != glfwMouseButtons[i]) { ++i; }
+	while( i < (u8)MouseButton::MAX && glfw != global_glfwMouseButtons[i]) { ++i; }
 	debugnobr(if(unlikely(i == (u8)KeyCode::KEY_MAX)) {
-		debug_message("glfwMouseButtonToButton() ==> couldn't find glfw-button of value %u\n", glfw);
+		debug_messagefmt("glfwMouseButtonToButton() ==> couldn't find glfw-button of value %u\n", glfw);
 	});
 
 
@@ -55,13 +98,7 @@ constexpr MouseButton toMouseButton(u16 glfw)
 struct
 {
 	u8 keys[(u8)KeyCode::KEY_MAX + 1]; /* KeyCode enum types are also used to index into the array */
-	/* 
-		bit 0: key was Release. 
-		bit 1: key was Pressed. 
-		when release => reset press 
-		<==>
-		when press   => reset release
-	*/
+
 
 	__force_inline void setState(u8 keyIndex, u8 state) {
 		keys[keyIndex] = state;
@@ -108,14 +145,24 @@ void update_mouse_callback_states()
 	memset(MouseListener.buttons, 0x00, (u8)MouseButton::MAX + 1);
 	return;
 }
-std::array<f64, 2> const& getCurrentFrameCursorPos()  { return MouseListener.currentFramePos;  }
-std::array<f64, 2> const& getPreviousFrameCursorPos() { return MouseListener.previousFramePos; }
-std::array<f64, 2> 		  getCursorDelta() 			  { 
+
+template<typename T> std::array<T, 2> getCurrentFrameCursorPos()  { return { static_cast<T>(MouseListener.currentFramePos[0]), static_cast<T>(MouseListener.currentFramePos[1]) }; }
+template<typename T> std::array<T, 2> getPreviousFrameCursorPos() { return { static_cast<T>(MouseListener.previousFramePos[0]), static_cast<T>(MouseListener.previousFramePos[1]) };    }
+template<typename T> std::array<T, 2> getCursorDelta() 			  { 
 	return {
-		MouseListener.currentFramePos[0] - MouseListener.previousFramePos[0],
-		-(MouseListener.currentFramePos[1] - MouseListener.previousFramePos[1]) /* Y axis is flipped on GLFW (X_axis = right, Y_axis = down)*/
+		(T)(MouseListener.currentFramePos[0]  - MouseListener.previousFramePos[0]),
+		(T)(MouseListener.previousFramePos[1] - MouseListener.currentFramePos[1] ) /* Y axis is flipped on GLFW (X_axis = right, Y_axis = down)*/
 	};
 }
+template std::array<f32, 2> getCurrentFrameCursorPos<f32>();
+template std::array<f64, 2> getCurrentFrameCursorPos<f64>();
+template std::array<u32, 2> getCurrentFrameCursorPos<u32>();
+template std::array<f32, 2> getPreviousFrameCursorPos<f32>();
+template std::array<f64, 2> getPreviousFrameCursorPos<f64>();
+template std::array<u32, 2> getPreviousFrameCursorPos<u32>();
+template std::array<f32, 2> getCursorDelta<f32>();
+template std::array<f64, 2> getCursorDelta<f64>();
+template std::array<u32, 2> getCursorDelta<u32>();
 
 
 
@@ -131,8 +178,10 @@ void glfw_framebuffer_size_callback(__unused GLFWwindow* handle, i32 w, i32 h)
 	glViewport(0, 0, w, h);
 	globalContext* ctx = reinterpret_cast<globalContext*>( glfwGetWindowUserPointer(handle) );
 	
-	ctx->glfw.minimized = (w == 0) || (h == 0);
+	debug_messagefmt("framebuffer callback ==> { %d , %d }\n", w, h);
+	ctx->glfw.windowMinimized = (w == 0) || (h == 0); 
 	ctx->glfw.wh = { w, h };
+	// ctx->camera.onResize(w, h);
 	return;
 }
 
@@ -140,19 +189,19 @@ void glfw_framebuffer_size_callback(__unused GLFWwindow* handle, i32 w, i32 h)
 void glfw_key_callback(__unused GLFWwindow* handle, int key, int __unused scancode, int action, __unused int mods)
 {
 	u8 keyCodeIndex = (u8)toKeyCode(key);
-	u8 before		= KeyListener.keys[keyCodeIndex];
+	debugnobr(u8 before = KeyListener.keys[keyCodeIndex]);
 	static std::array<const char*, (u8)InputState::MAX + 1> actionStr = {
 		"RELEASED",
 		"PRESSED ",
 		"REPEAT  ",
 		""
 	};
-
+	
 	actionStr[3] = actionStr[static_cast<u8>(action)];
-	KeyListener.setState(keyCodeIndex, (action + 1) * (action != GLFW_REPEAT) );
+	KeyListener.setState(keyCodeIndex, (1 << action) );
 
 	
-	debug_message("[key_callback][kci=%02u][Before=%u]  { GLFW ==> [%s] Key %s }  [After=%u]\n", 
+	debug_messagefmt("[key_callback][kci=%02u][Before=%u]  [%s] Key %s  [After=%u]\n", 
 		keyCodeIndex, 
 		before, 
 		glfwGetKeyName(key, scancode), 
@@ -161,16 +210,11 @@ void glfw_key_callback(__unused GLFWwindow* handle, int key, int __unused scanco
 	);
 
 
-	auto* ctx = getGlobalContext();
-	ctx->camera.updateFromKeyboard(ctx->glfw.time_dt());
+
+	// auto* ctx = getGlobalContext();
+	// ctx->camera.updateFromKeyboard(ctx->glfw.time_dt());
 	return;
 }
-
-
-// void glfw_window_focus_callback(GLFWwindow* window, int focused)
-// {
-// 	windowIsCurrentlyFocused = 
-// }
 
 
 void glfw_cursor_position_callback(__unused GLFWwindow* window, double xpos, double ypos)
@@ -178,7 +222,7 @@ void glfw_cursor_position_callback(__unused GLFWwindow* window, double xpos, dou
 	MouseListener.previousFramePos = MouseListener.currentFramePos;
 	MouseListener.currentFramePos = { xpos, ypos };
 	
-	getGlobalContext()->camera.updateFromMouse();
+	// getGlobalContext()->camera.updateFromMouse();
 	return;
 }
 
@@ -186,7 +230,7 @@ void glfw_cursor_position_callback(__unused GLFWwindow* window, double xpos, dou
 void glfw_mouse_button_callback(__unused GLFWwindow* window, int button, int action, __unused int mods)
 {
 	u8 buttonIndex = (u8)toMouseButton(button); /* might return MoueButton::MAX */
-	u8 before      = MouseListener.buttons[buttonIndex];
+	debugnobr(u8 before = MouseListener.buttons[buttonIndex]);
 	static std::array<const char*, (u8)InputState::MAX + 1> actionStr = {
 		"RELEASED",
 		"PRESSED ",
@@ -203,10 +247,18 @@ void glfw_mouse_button_callback(__unused GLFWwindow* window, int button, int act
 
 	actionStr[3]   = actionStr[static_cast<u8>(action)];
 	ButtonNames[4] = ButtonNames[static_cast<u8>(buttonIndex)];
-	MouseListener.setState(buttonIndex, (action + 1) * (action != GLFW_REPEAT) );
+	MouseListener.setState(buttonIndex, (1 << action) );
 
 
-	debug_message("[mouse_button_callback][bi=%02u][Before=%u]  { GLFW ==> [%s] Mouse Button %s }  [After=%u]\n", 
+	auto p = getGlobalContext();
+	if(getMouseButtonState(MouseButton::RIGHT) == InputState::PRESS) 
+		p->glfw.lockCursor();
+
+	if(getMouseButtonState(MouseButton::LEFT) == InputState::PRESS) 
+		p->glfw.unlockCursor();
+	
+	
+	debug_messagefmt("[mouse_button_callback][bi=%02u][Before=%u]  [%s] Mouse Button %s  [After=%u]\n", 
 		buttonIndex,
 		before,
 		ButtonNames[4],

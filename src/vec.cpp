@@ -36,28 +36,29 @@ void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out) {
 
 void identity(mat4f& out) {
 	out.mem.zero();
-	out.mem[0 ] = 1.0f;
-	out.mem[5 ] = 1.0f;
-	out.mem[10] = 1.0f;
-	out.mem[15] = 1.0f;
+	out.m00 = 1.0f;
+	out.m11 = 1.0f;
+	out.m22 = 1.0f;
+	out.m33 = 1.0f;
 	return;
 }
 
 
 void translate(vec3f const& translate, mat4f& out) {
-	out.mem.zero();
-	out[3] = translate.homogenised;
+	identity(out);
+	out[3] = translate.homogenised; 
 	out[3].w = 1.0f;
+	transpose(out);
 	return;
 }
 
 
 void scale(vec3f const& scale, mat4f& out) {
 	out.mem.zero();
-	out.mem[0 ] = scale.x;
-	out.mem[5 ] = scale.y;
-	out.mem[10] = scale.z;
-	out.mem[15] = 1.0f;
+	out.m00 = scale.x;
+	out.m11 = scale.y;
+	out.m22 = scale.z;
+	out.m33 = 1.0f;
 	return;
 }
 
@@ -94,11 +95,16 @@ void perspective(float aspectRatio, float fovy, float near, float far, mat4f& ou
 	fovy = 2.0f * far * near;
 
 	out.mem.zero();
-	out.mem[ 0] = r;
-	out.mem[ 5] = t;
-	out.mem[10] = (far + near) * nmf;
-	out.mem[11] = -1.0f;
-	out.mem[14] = fovy * nmf;
+	out.m00 = r;
+	out.m11 = t;
+	out.m22 = (far + near) * nmf;
+	out.m23 = -1.0f;
+	out.m32 = fovy * nmf;
+	// out.mem[ 0] = r;
+	// out.mem[ 5] = t;
+	// out.mem[10] = (far + near) * nmf;
+	// out.mem[11] = -1.0f;
+	// out.mem[14] = fovy * nmf;
 	return;
 }
 
@@ -127,91 +133,62 @@ void lookAt(
 ) {
 	vec3f forward, right, newup, trans;
 
-	/* (at - eye).div(|(eye-at)|) */
-	forward  = eyePos; 
-	forward -= at; 
+	/* (eye - at).div(|(eye-at)|) because 'forward' is towards the screen (us), 'eye' is AT the screen and 'at' is what we want to look at */
+	forward = eyePos - at; 
 	forward.normalize();
 
 	/* camera_view_dir x up_basis_vector = right_basis_vector */
 	right = cross(up, forward);
 	right.normalize();
-
+	
 	/* right_basis_vector(x_axis) x forward_basis_vector(z_axis) = up_basis_vector(y_axis) */
 	newup = cross(forward, right);
 
 
-	/* Set View Matrix Basis Vectors */
+	/* Set View Matrix Basis Vectors (R^-1)*/
 	out.mem.zero();
 	out[0] = right.homogenised;
 	out[1] = newup.homogenised;
 	out[2] = forward.homogenised;
-
-	// mark();
-// 	out.print();
 	transpose(out);
-	// out.print();
-	// mark();
 
-	/* Set The Translation Vector to (-eyePos, 1.0f) */
+	/* Set The Translation Vector to (-eyePos, 1.0f) (T^-1) */
 	trans  = -1.0f * eyePos;
-	// markstr("translation: ");
-	// trans.print();
-	// mark();
 	out[3] = {
 		dot(right,   trans),
 		dot(newup,   trans),
 		dot(forward, trans),
 		1.0f
 	};
-	// out.print();
-	// mark();
-	// debug({
-	// 	printf("LookAt() Debug Report:\n");
-	// 	printf("+X    "); right.homogenised.print();
-	// 	printf("+Y    "); newup.homogenised.print();
-	// 	printf("+Z    "); forward.homogenised.print();
-	// 	printf("-P    "); trans.homogenised.print();
-	// 	printf("-P_mat"); out[3].print();
-	// 	printf("mat^-1"); out.print();
-	// });
 	return;
 }
 
 
-/* 
-	DOESNT WORK AS INTENDED, DO NOT USE!!!
-*/
 void inv_lookAt(
 	vec3f const& eyePos, 
 	vec3f const& at, 
 	vec3f const& up,
 	mat4f& 		 out
 ) {
-	vec3f forward, right, newup;
+	vec3f forward, right, newup, trans;
 
-	/* (at - eye).div(|(eye-at)|) */
-	forward  = eyePos; 
-	forward -= at; 
-	forward.normalize();
-
-	/* camera_view_dir x up_basis_vector = right_basis_vector */
-	right = cross(up, forward);
-	right.normalize();
-
-	/* right_basis_vector(x_axis) x forward_basis_vector(z_axis) = up_basis_vector(y_axis) */
-	newup = cross(forward, right);
-
+	/* Same as lookAt */
+	forward  = eyePos - at; 		       forward.normalize();
+	right    = cross(up, forward);    right.normalize();
+	newup    = cross(forward, right);
+	
+	/* Reset the Matrix (out.m33 = 1.0f is the important part )*/
+	identity(out);
 
 	/* Set View Matrix Basis Vectors */
-	out.mem.zero();
 	out[0] = right.homogenised;
 	out[1] = newup.homogenised;
 	out[2] = forward.homogenised;
-	/* Translation Vector is the same when inversing, meaning trans is useless */
+
+	/* Set Translation Vector */
 	out.m03 = dot(right,   eyePos);
 	out.m13 = dot(newup,   eyePos);
 	out.m23 = dot(forward, eyePos);
-	out.m33 = 1.0f;
 	return;
 }
 
