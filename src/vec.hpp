@@ -21,7 +21,8 @@ NAMESPACE_MATH_BEGIN
 
 
 
-template<typename T> using ref = typename std::conditional<sizeof(T) <= 8, T, T&>::type;
+template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
+template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
 
 
 template<typename T> constexpr T round2(T v) {
@@ -54,7 +55,7 @@ public:
 
 
 	Vector() { zero(); }
-	Vector(ref<T> defaultVal) 
+	Vector(const_ref<T> defaultVal) 
 	{
 		for(size_t i = 0; i < length; i += 2)  {
 			__data[i    ] = defaultVal;
@@ -92,6 +93,8 @@ static Vector<i32,   4 > temporaryBufferVec4i{};
 
 
 #define SET_MULTIPLE_VALUES 4llu
+#define normalizeIndex(i) (SET_MULTIPLE_VALUES * i)
+#define ni(i) normalizeIndex(i)
 
 
 #define INTRMD_FUNC_GENERATOR(op_symbol, name, arg1a0, arg1a1, arg1a2, arg1a3, ...) \
@@ -100,14 +103,14 @@ template<typename T, size_t len> void name( \
     __VA_ARGS__            , \
 	Vector<T, len>& 	  dst \
 ) { \
-	Vector<T, SET_MULTIPLE_VALUES> tmp; \
+	static Vector<T, SET_MULTIPLE_VALUES> tmp; \
 	size_t i  = 0; \
 	\
 	for(; i < len / SET_MULTIPLE_VALUES; ++i) { \
-		tmp[i    ] = a[i    ] op_symbol arg1a0; \
-		tmp[i + 1] = a[i + 1] op_symbol arg1a1; \
-		tmp[i + 2] = a[i + 2] op_symbol arg1a2; \
-		tmp[i + 3] = a[i + 3] op_symbol arg1a3; \
+		tmp[0] = a[ni(i)    ] op_symbol arg1a0; \
+		tmp[1] = a[ni(i) + 1] op_symbol arg1a1; \
+		tmp[2] = a[ni(i) + 2] op_symbol arg1a2; \
+		tmp[3] = a[ni(i) + 3] op_symbol arg1a3; \
 		memcpy(&dst.begin()[i], tmp.begin(), tmp.bytes()); \
 	} \
 	for(i *= SET_MULTIPLE_VALUES; i < len; ++i) { dst[i] = a[i] op_symbol arg1a0; } \
@@ -116,7 +119,7 @@ template<typename T, size_t len> void name( \
 
 
 #define GENERATE_VECTOR_OPERATOR_FUNCTIONS(op_symbol, name) \
-INTRMD_FUNC_GENERATOR(op_symbol, name, b[i], b[i+1], b[i+2], b[i+3], Vector<T, len> const& b) \
+INTRMD_FUNC_GENERATOR(op_symbol, name, b[ni(i)], b[ni(i) + 1], b[ni(i) + 2], b[ni(i) + 3], Vector<T, len> const& b) \
 INTRMD_FUNC_GENERATOR(op_symbol, name, b, b, b, b, T b) \
 
 
@@ -136,10 +139,10 @@ template<typename T, size_t len> T dot_prod(
 	size_t i  = 0;
 
 	for(; i < len / SET_MULTIPLE_VALUES; ++i) {
-		tmp[i    ] = a[i    ] * b[i    ];
-		tmp[i + 1] = a[i + 1] * b[i + 1];
-		tmp[i + 2] = a[i + 2] * b[i + 2];
-		tmp[i + 3] = a[i + 3] * b[i + 3];
+		tmp[0] = a[ni(i)    ] * b[ni(i)    ];
+		tmp[1] = a[ni(i) + 1] * b[ni(i) + 1];
+		tmp[2] = a[ni(i) + 2] * b[ni(i) + 2];
+		tmp[3] = a[ni(i) + 3] * b[ni(i) + 3];
 		tmp[i    ] = tmp[i	  ] + tmp[i + 1];
 		tmp[i + 1] = tmp[i + 2] + tmp[i + 3];
 		tmp[i] 	   = tmp[i] 	+ tmp[i + 1];
@@ -264,6 +267,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	2f, 
 	struct { float x;   float y;     };
 	struct { float u;   float v;     };
+	struct { float i;   float j;     };
 	struct { float yaw; float pitch; };
 	struct { float m0;  float m1;    },
 	vec2f(float a, float b) 
@@ -283,6 +287,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	4f,
 	struct { float x;   float y;     float z;    float w;     }; 
 	struct { float r;   float g;     float b;    float a;     };
+	struct { float i;   float j;     float k;    float l;     };
 	struct { float yaw; float pitch; float roll; float theta; };
 	struct { float m0;  float m1;    float m2;   float m3;    },
 	vec4f(float a, float b, float c, float d) 
@@ -302,8 +307,10 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	float,
 	3f,
-	struct { float x;   float y;     float z;    }; 
+	struct { float x;   float y;     float z;    };
+	struct { float u;   float v;     float w;    };
 	struct { float r;   float g;     float b;    };
+	struct { float i;   float j;     float k;    };
 	struct { float yaw; float pitch; float roll; };
 	struct { float m0;  float m1;    float m2;   };
 	vec4f homogenised,
@@ -319,6 +326,87 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 )
 GENERATE_CROSSPROD_FUNC(3, float, 3f)
 GENERATE_NEGATE_FUNC(3, float, 3f)
+
+
+
+DEFINE_VECTOR_STRUCTURE_ARGS( \
+	2,
+	u32, 
+	2u, 
+	struct { u32 x;   u32 y;     };
+	struct { u32 u;   u32 v;     };
+	struct { u32 i;   u32 j;     };
+	struct { u32 yaw; u32 pitch; };
+	struct { u32 m0;  u32 m1;    },
+	vec2u(u32 a, u32 b) 
+	{ 
+		x = a; 
+		y = b; 
+		return; 
+	}, 
+	"vec2u %p: ( %u, %u )\n", (void*)begin(), x, y
+)
+GENERATE_NEGATE_FUNC(2, u32, 2u)
+
+
+DEFINE_VECTOR_STRUCTURE_ARGS( \
+	4,
+	u32,
+	4u,
+	struct { u32 x;   u32 y;     u32 z;    u32 w;     }; 
+	struct { u32 r;   u32 g;     u32 b;    u32 a;     };
+	struct { u32 i;   u32 j;     u32 k;	   u32 l;     };
+	struct { u32 yaw; u32 pitch; u32 roll; u32 theta; };
+	struct { u32 m0;  u32 m1;    u32 m2;   u32 m3;    },
+	vec4u(u32 a, u32 b, u32 c, u32 d) 
+	{ 
+		x = a; 
+		y = b; 
+		z = c; 
+		w = d;
+		return; 
+	},
+	"vec4u %p: ( %u, %u, %u, %u )\n", (void*)begin(), x, y, z, w
+)
+GENERATE_NEGATE_FUNC(4, u32, 4u)
+
+
+DEFINE_VECTOR_STRUCTURE_ARGS( \
+	3,
+	u32,
+	3u,
+	struct { u32 x;   u32 y;     u32 z;    };
+	struct { u32 u;   u32 v;     u32 w;    };
+	struct { u32 r;   u32 g;     u32 b;    };
+	struct { u32 i;   u32 j;     u32 k;    };
+	struct { u32 yaw; u32 pitch; u32 roll; };
+	struct { u32 m0;  u32 m1;    u32 m2;   };
+	vec4u homogenised,
+	vec3u(u32 a, u32 b, u32 c) 
+	{ 
+		x = a; 
+		y = b; 
+		z = c;
+		homogenised.w = 1.0f;
+		return; 
+	},
+	"vec3u %p: ( %u, %u, %u )\n", (void*)begin(), x, y, z
+)
+GENERATE_CROSSPROD_FUNC(3, u32, 3u)
+GENERATE_NEGATE_FUNC(3, u32, 3u)
+
+
+
+
+#undef GENERATE_NEGATE_FUNC
+#undef GENERATE_CROSSPROD_FUNC
+#undef DEFINE_VECTOR_STRUCTURE_ARGS
+#undef GENERATE_VECTOR_OPERATOR_FUNCTIONS
+#undef INTRMD_FUNC_GENERATOR
+#undef normalizeIndex
+#undef ni
+#undef SET_MULTIPLE_VALUES
+
 
 
 struct mat4f 
@@ -412,10 +500,10 @@ struct mat4f
 	__force_inline void print()  const 
 	{ 
 		printf("mat4f %p:\n", (void*)begin());
-		printf("( %.05f, %.05f, %.05f, %.05f )\n", row[0].x, row[0].y, row[0].z, row[0].w);
-		printf("( %.05f, %.05f, %.05f, %.05f )\n", row[1].x, row[1].y, row[1].z, row[1].w);
-		printf("( %.05f, %.05f, %.05f, %.05f )\n", row[2].x, row[2].y, row[2].z, row[2].w);
-		printf("( %.05f, %.05f, %.05f, %.05f )\n", row[3].x, row[3].y, row[3].z, row[3].w);
+		printf("( %-5.05f, %-5.05f, %-5.05f, %-5.05f )\n", row[0].x, row[0].y, row[0].z, row[0].w);
+		printf("( %-5.05f, %-5.05f, %-5.05f, %-5.05f )\n", row[1].x, row[1].y, row[1].z, row[1].w);
+		printf("( %-5.05f, %-5.05f, %-5.05f, %-5.05f )\n", row[2].x, row[2].y, row[2].z, row[2].w);
+		printf("( %-5.05f, %-5.05f, %-5.05f, %-5.05f )\n", row[3].x, row[3].y, row[3].z, row[3].w);
 		return;
 	}
 };
@@ -508,8 +596,26 @@ void inv_perspective(mat4f const& in, mat4f& out);
 
 /* 
 	Using a Right Handed Coordinate System (+z towards viewer, +x is right, +y is up)
-	This Function is the World->Camera Transform Matrix.
+	 +y
+	 |
+	 |
+	 |
+	   _____ +x
+	 /
+	/
+	+z (camera looks to origin)
+	Compared to Left Handed:
+		  +y
+		    |
+		    |
+		    |
+	+x _____|
+		   /
+    	  /
+    	-z
+	[NOTE]: This is how the coordinate systems look when looking from -Z to the Origin (Use your fingers for demonstration).
 
+	This Function is the World->Camera Transform Matrix.
 	given:
 	V_world = V_cam * X, where X = Camera's Transform Matrix, Or Camera_Space->World_Space
 	Because we want V_cam =>
@@ -520,7 +626,7 @@ void inv_perspective(mat4f const& in, mat4f& out);
 		==> X^-1 = (R * T)^-1 = T^-1 * R^-1
 		<==> View_Matrix = T^-1 * R^-1 = translate(-eyePos) * BasisVectorMatrix (RotateXYZ, ...)
 	This link will help - https://stackoverflow.com/questions/349050/calculating-a-lookat-matrix?noredirect=1&lq=1
-	NOTE ABOUT LINK CONTENTS: The Matrix is left Handed (At - eye instead of eye - At), but the math is the same.
+	NOTE ABOUT LINK CONTENTS: The Matrix is left Handed, but the math is the same.
 	
 	Resulting View Matrix (World->Camera):
 		where xAxis = right, yAxis = newup, zAxis = forward

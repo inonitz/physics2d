@@ -27,6 +27,7 @@ public:
     __force_inline void close() const { glfwSetWindowShouldClose(handle, true); }
     void lockCursor() const;
     void unlockCursor() const;
+    void setCursorMode(bool toLock) const;
     void procUpcomingEvents();
     void procOngoingEvents()  const;
 };

@@ -3,13 +3,28 @@ layout(location = 0) in  vec2 texCoords;
 layout(location = 0) out vec4 finalCol;
 
 uniform sampler2D texData;
-uniform vec4      texelMultiply;
+
+
+/*
+layout(std460) buffer testing_ssbo {
+	vec2i textureDimensions;
+	vec4[] textureColors;
+};
+*/
+
 
 void main()
 {
-	vec4 ourColor = vec4(1.0f, 0.0f, 0.5f, 1.0f);
-	vec4 intrmd   = texture(texData, texCoords) * texelMultiply;
-	finalCol      = intrmd;
+	vec4 intrmd = texture(texData, texCoords);
+	finalCol    = intrmd;
 }
+
+
+/*
+	Figure out how to test the SSBO struct,
+	probably finish integrating the compute shader into the project,
+	and from there (if all goes according to plan) use the SSBO as part of the rendering process,
+	so that there'll be a visual difference that will make me notice that it worked.
+*/
 
 

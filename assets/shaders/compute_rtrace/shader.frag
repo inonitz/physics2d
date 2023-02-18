@@ -1,17 +1,13 @@
-#version 450 core
-// layout(location = 0) in  vec2 texCoords;
-// layout(location = 1) in  vec4 pos;
-// layout(location = 0) out vec4 finalCol;
+#version 430 core
+in  vec2 TexCoords;
+out vec4 FragColor;
 
-
-// uniform sampler2D texData;
-
-
+	
+uniform sampler2D tex;
 
 
 void main()
-{
-	// vec3 intrmd = texture(texData, texCoords).rgb;
-	// finalCol    = vec4(intrmd, 1.0f);
-	return;
+{             
+    vec3 texCol = texture(tex, TexCoords).rgb;      
+    FragColor = vec4(texCol, 1.0);
 }

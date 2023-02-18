@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdexcept>
@@ -73,6 +74,7 @@ static_assert(GET_ARG_COUNT(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 1
 #define mark_generic(atomic_8byte_counter, ...) \
 	{ \
 		printf("[MARKER %llu] [FROM] %s [Line] %u", atomic_8byte_counter.load(),  __FILE__, __LINE__); \
+		++atomic_8byte_counter; \
 		if constexpr (GET_ARG_COUNT(__VA_ARGS__) > 1) { /*  */ \
 			printf(" [ADDITIONAL_INFO] "); printf(__VA_ARGS__); \
 		} \
@@ -162,16 +164,24 @@ extern std::atomic<size_t> markflag;
 
 
 #define boolean(arg) !!(arg)
-#define KB           	 (1024ul)
-#define MB           	 (KB*KB)
-#define GB           	 (MB*MB)
-#define PAGE         	 (4 * KB)
-#define CACHE_LINE_BYTES (64ul)
-#define DEFAULT8         (0xAA)
-#define DEFAULT16        (0xF00D)
-#define DEFAULT32        (0xBABEBABE)
-#define DEFAULT64        (0xFACADE00FACADE00)
-#define DEFAULT128       (0xBEBC0FFEEAC1DBEB)
+#define KB           	   (1024llu)
+#define MB           	   (KB*KB)
+#define GB           	   (MB*MB)
+#define PAGE         	   (4 * KB)
+#define __M64_ALIGN_BYTES  (0x08llu)
+#define __M128_ALIGN_BYTES (0x0fllu)
+#define __M256_ALIGN_BYTES (0x1fllu)
+#define __M512_ALIGN_BYTES (0x3fllu)
+#define __M64_SIZE_BYTES   (0x08llu)
+#define __M128_SIZE_BYTES  (0x10llu)
+#define __M256_SIZE_BYTES  (0x20llu)
+#define __M512_SIZE_BYTES  (0x40llu)
+#define CACHE_LINE_BYTES   (64ul)
+#define DEFAULT8           (0xAA)
+#define DEFAULT16          (0xF00D)
+#define DEFAULT32          (0xBABEBABE)
+#define DEFAULT64          (0xFACADE00FACADE00)
+#define DEFAULT128         (0xBEBC0FFEEAC1DBEB)
 
 
 #define __hot           __attribute__((hot))
@@ -193,8 +203,9 @@ extern std::atomic<size_t> markflag;
 
 #define amalloc_t(type, size, align) (type*)_mm_malloc(size, align)
 #define afree_t(ptr) _mm_free(ptr)
-
-
+#define isaligned(ptr, alignment) boolean( (  reinterpret_cast<size_t>(ptr) & (static_cast<size_t>(alignment) - 1llu)  ) == 0 )
+#define __scast(type, val) static_cast<type>(val)
+#define __rcast(type, val) reinterpret_cast<type>(val)
 
 
 typedef char     char_t;

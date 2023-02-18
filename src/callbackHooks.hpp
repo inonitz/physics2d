@@ -116,3 +116,10 @@ InputState getMouseButtonState(MouseButton key);
 template<typename T> std::array<T, 2> getCurrentFrameCursorPos();
 template<typename T> std::array<T, 2> getPreviousFrameCursorPos();
 template<typename T> std::array<T, 2> getCursorDelta();
+
+
+
+#define isKeyPressed(key)  boolean(getKeyState(key) == InputState::PRESS  )
+#define isKeyReleased(key) boolean(getKeyState(key) == InputState::RELEASE)
+#define isButtonPressed(mButton)  boolean(getMouseButtonState(mButton) == InputState::PRESS  )
+#define isButtonReleased(mButton) boolean(getMouseButtonState(mButton) == InputState::RELEASE)

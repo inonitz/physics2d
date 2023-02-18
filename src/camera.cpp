@@ -6,107 +6,47 @@
 
 
 void Camera::create(
-	math::vec3f const& cameraPosition,
-	math::vec4f        projectionData /* fov, aspectRatio, near, far */	
+	math::vec3f const& initialPosition, 
+	math::vec3f const& frontDirection,
+	math::vec2f const& speeds
 ) {
-	position = cameraPosition;
-	front    = { 0.0f, 0.0f,  1.0f };
-	aggregateAngles = { 0.0f, 0.0f };
+	pos 	 = initialPosition;
+	front    = frontDirection;
+	velocity = speeds;
 
-	fov 		= projectionData[0];
-	aspectRatio = projectionData[1];
-	nearClip 	= projectionData[2];
-	farClip  	= projectionData[3];
-
-	math::identity(proj);
+	rotation = {0.0f, 0.0f};
 	math::identity(view);
 	return;
 }
 
 
-
-
-void Camera::onUpdate(double dt)
+void Camera::onUpdate(f32 dt)
 {
-	math::vec2f delta;
-	math::vec3f camRight = math::cross(worldUpDirection, front); camRight.normalize();
-	if(getKeyState(KeyCode::W) == InputState::PRESS || getKeyState(KeyCode::W) == InputState::REPEAT) { position += front    * (dt * cameraSpeed); }
-	if(getKeyState(KeyCode::S) == InputState::PRESS || getKeyState(KeyCode::S) == InputState::REPEAT) { position -= front    * (dt * cameraSpeed); }
-	if(getKeyState(KeyCode::D) == InputState::PRESS || getKeyState(KeyCode::D) == InputState::REPEAT) { position -= camRight * (dt * cameraSpeed); }
-	if(getKeyState(KeyCode::A) == InputState::PRESS || getKeyState(KeyCode::A) == InputState::REPEAT) { position += camRight * (dt * cameraSpeed); }
+	math::vec2f delta, rotRad; 
+	math::vec3f right = math::cross(worldUp, front); 
+	right.normalize();
+	if(getKeyState(KeyCode::W) == InputState::PRESS || getKeyState(KeyCode::W) == InputState::REPEAT) { pos += front * (dt * velocity.u); }
+	if(getKeyState(KeyCode::S) == InputState::PRESS || getKeyState(KeyCode::S) == InputState::REPEAT) { pos -= front * (dt * velocity.u); }
+	if(getKeyState(KeyCode::D) == InputState::PRESS || getKeyState(KeyCode::D) == InputState::REPEAT) { pos -= right * (dt * velocity.u); }
+	if(getKeyState(KeyCode::A) == InputState::PRESS || getKeyState(KeyCode::A) == InputState::REPEAT) { pos += right * (dt * velocity.u); }
 
 
-	delta = getCursorDelta<f32>();
-	delta *= cameraRotationSpeed;
-	if(delta.x != 0.0f && delta.y != 0.0f) {
-		aggregateAngles += delta;
-		aggregateAngles.pitch = std::clamp(aggregateAngles.pitch, -89.0f, 89.0f);
+	delta = math::vec2f(getCursorDelta<f32>()) * velocity.v;
+	if(delta.x != 0.0f && delta.y != 0.0f) 
+	{
+		rotation += delta * dt;
+		rotation.pitch = std::clamp(rotation.pitch, -89.0f, 89.0f);
 		
-		math::vec2f eulerRadians = { 
-			math::radians(aggregateAngles.yaw  ), 
-			math::radians(aggregateAngles.pitch) 
-		};
+		rotRad = { math::radians(rotation.yaw  ), math::radians(rotation.pitch) };
 		front = {
-			cosf(eulerRadians.yaw) * cosf(eulerRadians.pitch),
-			sinf(eulerRadians.pitch),
-			sinf(eulerRadians.yaw) * cosf(eulerRadians.pitch)
+			cosf(rotRad.yaw) * cosf(rotRad.pitch),
+			sinf(rotRad.pitch),
+			sinf(rotRad.yaw) * cosf(rotRad.pitch)
 		};
 		front.normalize();
 	}
 
 
-	recalculateView();
-	return;
-}
-
-
-/*
-	Don't know about this function, rethink whether you'll actually use it.
-*/
-void Camera::onResize(i32 width, i32 height)
-{
-	f32 newRatio = static_cast<f32>(width) * (1.0f / static_cast<f32>(height));
-	if(newRatio == aspectRatio)
-		return;
-	
-	aspectRatio = newRatio;
-	recalculateProjection();
-	return;
-}
-
-
-void Camera::updateProjection(math::vec4f const& projectionData)
-{
-	fov 		= projectionData[0];
-	aspectRatio = projectionData[1];
-	nearClip 	= projectionData[2];
-	farClip  	= projectionData[3];
-	recalculateProjection();
-	return;
-}
-
-
-
-void Camera::recalculateProjection()
-{
-	math::perspective(
-		aspectRatio, 
-		math::radians(fov), 
-		nearClip, 
-		farClip, 
-		proj
-	);
-	return;
-}
-
-
-void Camera::recalculateView()
-{
-	math::lookAt(
-		position, 
-		position + front, 
-		worldUpDirection,
-		view
-	);
+	recalcView();
 	return;
 }

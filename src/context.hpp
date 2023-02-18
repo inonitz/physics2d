@@ -1,24 +1,24 @@
 #pragma once
 #include "window.hpp"
-// #include "camera.hpp"
+#include "camera.hpp"
 #include <array>
 #include <vector>
 
 
 
 
-// static constexpr std::array<const char*, 4> paths = {
-// 		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.vert",
-// 		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.frag",
-// 		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.comp",
-// 		"C:/CTools/Projects/mglw-strip/assets/sample_img.jpg"
-// };
 static constexpr std::array<const char*, 4> assetPaths = {
-		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.vert",
-		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.frag",
-		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.comp",
-		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/sample_img.jpg"
+		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.vert",
+		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.frag",
+		"C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/shader.comp",
+		"C:/CTools/Projects/mglw-strip/assets/white_paper.jpg"
 };
+// static constexpr std::array<const char*, 4> assetPaths = {
+// 		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.vert",
+// 		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.frag",
+// 		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/shader.comp",
+// 		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/sample_img.jpg"
+// };
 static const std::vector<float> vertices = 
 {
 	// positions               // texture coords
@@ -40,9 +40,10 @@ struct Vertex {
 
 
 struct globalContext {
-	window    glfw;
-	// FPSCamera camera;
-	size_t    frameIndex;
+	window 			 glfw;
+	Camera 			 cam;
+	ProjectionMatrix persp;
+	size_t 			 frameIndex;
 };
 
 

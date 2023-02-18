@@ -86,6 +86,13 @@ void window::unlockCursor() const {
 }
 
 
+void window::setCursorMode(bool lock) const
+{
+	i32 chosenMacro = lock * GLFW_CURSOR_DISABLED + !(lock) * GLFW_CURSOR_NORMAL;
+	glfwSetInputMode(handle, GLFW_CURSOR, chosenMacro);
+}
+
+
 void window::procUpcomingEvents() 
 {
 	/* begin frame */

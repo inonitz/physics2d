@@ -181,7 +181,7 @@ void glfw_framebuffer_size_callback(__unused GLFWwindow* handle, i32 w, i32 h)
 	debug_messagefmt("framebuffer callback ==> { %d , %d }\n", w, h);
 	ctx->glfw.windowMinimized = (w == 0) || (h == 0); 
 	ctx->glfw.wh = { w, h };
-	// ctx->camera.onResize(w, h);
+	ctx->persp.__.aspectRatio = w / (f32)h;
 	return;
 }
 
