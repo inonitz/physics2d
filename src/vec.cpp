@@ -144,7 +144,6 @@ void lookAt(
 	/* right_basis_vector(x_axis) x forward_basis_vector(z_axis) = up_basis_vector(y_axis) */
 	newup = cross(forward, right);
 
-
 	/* Set View Matrix Basis Vectors (R^-1)*/
 	out.mem.zero();
 	out[0] = right.homogenised;
@@ -173,9 +172,9 @@ void inv_lookAt(
 	vec3f forward, right, newup, trans;
 
 	/* Same as lookAt */
-	forward  = eyePos - at; 		       forward.normalize();
-	right    = cross(up, forward);    right.normalize();
-	newup    = cross(forward, right);
+	forward = eyePos - at; 		         forward.normalize();
+	right   = cross(up, forward);   right.normalize();
+	newup   = cross(forward, right);
 	
 	/* Reset the Matrix (out.m33 = 1.0f is the important part )*/
 	identity(out);

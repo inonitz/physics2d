@@ -12,7 +12,8 @@ valid_argv2 = ["--exec"]
 debug = False
 
 compiler_name_prefix = "x86_64-w64-mingw32-"
-compiler_absolute_path = "C:/CTools/mingw64-msvcrt/bin/"
+# compiler_absolute_path = "C:/CTools/mingw64-msvcrt/bin/"
+compiler_absolute_path = "C:/Program Files/Programming Utillities/mingw-ucrt/bin/"
 
 
 def main():

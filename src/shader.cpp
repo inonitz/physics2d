@@ -38,7 +38,7 @@ bool Program::loadShader(ShaderData& init, BufferData& loadedShader)
     glGetShaderiv(init.id, GL_COMPILE_STATUS, &successStatus);
     if(!successStatus) {
         glGetShaderInfoLog(init.id, genericErrorLog.size(), &length, genericErrorLog.data());
-        printf("Shader [type %s] Error Log [%d Bytes]: %s\n", shaderTypeToString(init.type), length, genericErrorLog);
+        printf("Shader [type %s] Error Log [%d Bytes]: %s\n", shaderTypeToString(init.type), length, genericErrorLog.data());
 
         glDeleteShader(init.id);
         init.id = DEFAULT32;

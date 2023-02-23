@@ -19,12 +19,6 @@
 NAMESPACE_MATH_BEGIN
 
 
-
-
-template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
-template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
-
-
 template<typename T> constexpr T round2(T v) {
 	static_assert(std::is_integral<T>::value, "Value must be an Integral Type! (Value v belongs to group N [0 -> +inf]. ");
 	--v;
@@ -97,7 +91,7 @@ static Vector<i32,   4 > temporaryBufferVec4i{};
 #define ni(i) normalizeIndex(i)
 
 
-#define INTRMD_FUNC_GENERATOR(op_symbol, name, arg1a0, arg1a1, arg1a2, arg1a3, ...) \
+#define INTRMD_FUNC_GENERATOR(op_symbol, name, arg1a0, arg1a1, arg1a2, arg1a3, arg1a4, ...) \
 template<typename T, size_t len> void name( \
 	Vector<T, len> const& a, \
     __VA_ARGS__            , \
@@ -106,21 +100,21 @@ template<typename T, size_t len> void name( \
 	static Vector<T, SET_MULTIPLE_VALUES> tmp; \
 	size_t i  = 0; \
 	\
-	for(; i < len / SET_MULTIPLE_VALUES; ++i) { \
+	for(; i < (len / SET_MULTIPLE_VALUES); ++i) { \
 		tmp[0] = a[ni(i)    ] op_symbol arg1a0; \
 		tmp[1] = a[ni(i) + 1] op_symbol arg1a1; \
 		tmp[2] = a[ni(i) + 2] op_symbol arg1a2; \
 		tmp[3] = a[ni(i) + 3] op_symbol arg1a3; \
 		memcpy(&dst.begin()[i], tmp.begin(), tmp.bytes()); \
 	} \
-	for(i *= SET_MULTIPLE_VALUES; i < len; ++i) { dst[i] = a[i] op_symbol arg1a0; } \
+	for(i *= SET_MULTIPLE_VALUES; i < len; ++i) { dst[i] = a[i] op_symbol arg1a4; } \
 	return; \
 } \
 
 
 #define GENERATE_VECTOR_OPERATOR_FUNCTIONS(op_symbol, name) \
-INTRMD_FUNC_GENERATOR(op_symbol, name, b[ni(i)], b[ni(i) + 1], b[ni(i) + 2], b[ni(i) + 3], Vector<T, len> const& b) \
-INTRMD_FUNC_GENERATOR(op_symbol, name, b, b, b, b, T b) \
+INTRMD_FUNC_GENERATOR(op_symbol, name, b[ni(i)], b[ni(i) + 1], b[ni(i) + 2], b[ni(i) + 3], b[i], Vector<T, len> const& b) \
+INTRMD_FUNC_GENERATOR(op_symbol, name, b, b, b, b, b, T b) \
 
 
 
@@ -138,7 +132,7 @@ template<typename T, size_t len> T dot_prod(
 	T aggregate{0x00};
 	size_t i  = 0;
 
-	for(; i < len / SET_MULTIPLE_VALUES; ++i) {
+	for(; i < (len / SET_MULTIPLE_VALUES); ++i) {
 		tmp[0] = a[ni(i)    ] * b[ni(i)    ];
 		tmp[1] = a[ni(i) + 1] * b[ni(i) + 1];
 		tmp[2] = a[ni(i) + 2] * b[ni(i) + 2];

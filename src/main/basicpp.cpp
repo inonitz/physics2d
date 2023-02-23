@@ -156,9 +156,9 @@ int basicpp()
 
         if(focused && !paused)
         {
-            context->cam.onUpdate(context->glfw.time_dt());
-            context->persp.recalculate();
-
+			context->cam.onUpdate(context->glfw.time_dt());
+			context->persp.recalculate();
+		
 
             compute.bind();
             glDispatchCompute(width / 64, height, 1);

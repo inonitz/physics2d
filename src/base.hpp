@@ -208,7 +208,9 @@ extern std::atomic<size_t> markflag;
 #define __rcast(type, val) reinterpret_cast<type>(val)
 
 
-typedef char     char_t;
+typedef unsigned char byte;
+typedef char          char_t;
+
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
@@ -219,3 +221,7 @@ typedef int16_t  i16;
 typedef int8_t   i8;
 typedef float    f32;
 typedef double   f64;
+
+
+template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
+template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
