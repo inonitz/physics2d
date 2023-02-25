@@ -225,3 +225,4 @@ typedef double   f64;
 
 template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
 template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
+template<typename T> using value_ptr = typename std::conditional<sizeof(T) <= 8, T, T*>::type;
