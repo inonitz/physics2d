@@ -19,19 +19,6 @@
 NAMESPACE_MATH_BEGIN
 
 
-template<typename T> constexpr T round2(T v) {
-	static_assert(std::is_integral<T>::value, "Value must be an Integral Type! (Value v belongs to group N [0 -> +inf]. ");
-	--v;
-	v |= v >> 1;
-	v |= v >> 2;
-	v |= v >> 4;
-	v |= v >> 8;
-	v |= v >> 16;
-	++v;
-	return v;
-}
-
-
 template<typename T> constexpr T radians(T v) {
 	return v * (T)0.017453292519943295; /* value * PI * (1 / 180) */
 }

@@ -191,7 +191,7 @@ extern std::atomic<size_t> markflag;
 #endif
 #define notused         __attribute__((unused)) /* more appropriate for function parameters */
 #define pack            __attribute__((packed))
-#define alignpack(size) __attribute__((packed, aligned(size)))
+#define alignpk(size)   __attribute__((packed, aligned(size)))
 #define alignsz(size)   __attribute__((aligned(size)))
 
 #ifndef __force_inline 
@@ -226,3 +226,16 @@ typedef double   f64;
 template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
 template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
 template<typename T> using value_ptr = typename std::conditional<sizeof(T) <= 8, T, T*>::type;
+
+
+template<typename T> constexpr T round2(T v) {
+	static_assert(std::is_integral<T>::value, "Value must be an Integral Type! (Value v belongs to group N [0 -> +inf]. ");
+	--v;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	++v;
+	return v;
+}

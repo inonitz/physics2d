@@ -34,7 +34,7 @@ private:
 			freelist[i].index = i + 1;
 			freelist[i].next = &freelist[i + 1];
 		}
-		freelist[elemCount - 1] = { elemCount, nullptr }; /* last element shouldn't pointer anywhere */
+		freelist[elemCount - 1] = { __scast(i64, elemCount), nullptr }; /* last element shouldn't pointer anywhere */
 		available = &freelist[0];
 		return;
 	}
@@ -42,8 +42,8 @@ private:
 public:
 	void create(size_t amountOfElements)
 	{
-		buffer   = _mm_malloc(sizeof(T)    * amountOfElements, sizeof(T)   );
-		freelist = _mm_malloc(sizeof(Node) * amountOfElements, sizeof(Node));
+		buffer   = __scast(T*,    _mm_malloc( sizeof(T)   * amountOfElements, sizeof(T)    ));
+		freelist = __scast(Node*, _mm_malloc(sizeof(Node) * amountOfElements, sizeof(Node) ));
 		common_init(amountOfElements);
 		return;
 	}
@@ -76,7 +76,7 @@ public:
 
 	void destroy() 
 	{
-		if(!DontFreeCreationPointer) {
+		if constexpr(!DontFreeCreationPointer) {
 			_mm_free(buffer);
 		}
 		
@@ -100,14 +100,41 @@ public:
 	}
 
 
-	void free(T* ptr)
+	size_t allocate_index()
 	{
-		size_t idx = index_from_pointer(ptr);
-		ifcrashdbg(!isaligned(ptr, sizeof(T)) || occupied(idx) || (freeBlk == elemCount));
+		ifcrashdbg(!freeBlk);
+		T* v = &buffer[available->index - 1];
+		available->index *= -1; /* now occupied */
+
+		available = available->next;
+		--freeBlk;
+		return v;	
+	}
+
+
+	void free_index(size_t idx)
+	{
+		ifcrashdbg(!occupied(idx) || freeBlk == elemCount || idx >= elemCount);
 		freelist[idx].index *= -1;
 		freelist[idx].next = available;
 		available = &freelist[idx];
 		++freeBlk;
+
+		memset(&buffer[idx], DEFAULT8, sizeof(T)); /* completely wipe the block of old data */
+		return;
+	}
+
+
+	void free(T* ptr)
+	{
+		size_t idx = index_from_pointer(ptr);
+		ifcrashdbg(!isaligned(ptr, sizeof(T)) || !occupied(idx) || (freeBlk == elemCount));
+		freelist[idx].index *= -1;
+		freelist[idx].next = available;
+		available = &freelist[idx];
+		++freeBlk;
+		
+		memset(ptr, DEFAULT8, sizeof(T)); /* completely wipe the block of old data */
 		return;
 	}
 

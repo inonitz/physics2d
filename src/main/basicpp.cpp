@@ -4,6 +4,7 @@
 #include <ImGui/imgui.h>
 #include "../context.hpp"
 #include "../shader.hpp"
+#include "../hashtable.hpp"
 
 
 
@@ -59,6 +60,12 @@ void renderImGui(globalContext* const ctx, math::mat4f const& modelMatrix)
 }
 
 
+template<u8 type> struct GridCell {
+	f32 p;
+	f32 v;
+	math::vec2f ux;
+	math::vec2f uy;
+};
 
 
 int basicpp()
@@ -85,6 +92,7 @@ int basicpp()
 	context->cam.create({ 0.0f, 0.0f, -3.0f });
 	context->persp.create({ windowWidth / (f32)windowHeight, 90.0f, 0.1f, 100.0f });
 	context->frameIndex = 0;
+	
 
 
 	shader.fromFiles({
@@ -150,34 +158,29 @@ int basicpp()
 	{
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         context->glfw.procUpcomingEvents();
-        if(focused)
-            renderImGui(context, modelMatrix);
-        
+		if(focused)
+		{
+			renderImGui(context, modelMatrix);
+			if(!paused)
+			{
+				context->cam.onUpdate(context->glfw.time_dt());
+				context->persp.recalculate();
+			
+				compute.bind();
+				glDispatchCompute(width / 64, height, 1);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-        if(focused && !paused)
-        {
-			context->cam.onUpdate(context->glfw.time_dt());
-			context->persp.recalculate();
-		
+				shader.bind();
+				glBindTextureUnit(0, texture);
+				shader.uniform1i("texData", 0);
+				shader.uniformMatrix4fv("model", modelMatrix);
+				shader.uniformMatrix4fv("view", context->cam.constref());
+				shader.uniformMatrix4fv("projection", context->persp.constref());
+				glBindVertexArray(VAO);
+				glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(indices[0]), GL_UNSIGNED_INT, 0);
+			}
 
-            compute.bind();
-            glDispatchCompute(width / 64, height, 1);
-            glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-            shader.bind();
-            glBindTextureUnit(0, texture);
-            shader.uniform1i("texData", 0);
-            shader.uniformMatrix4fv("model", modelMatrix);
-            shader.uniformMatrix4fv("view", context->cam.constref());
-            shader.uniformMatrix4fv("projection", context->persp.constref());
-            glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(indices[0]), GL_UNSIGNED_INT, 0);
-        }
-
-
-        if(focused) {
-            context->glfw.setCursorMode( !paused);
-            
+			context->glfw.setCursorMode( !paused);
             if(refresh[0]) {
                 shader.reload();
                 refresh[0] = shader.success();
@@ -186,7 +189,7 @@ int basicpp()
                 compute.reload();
                 refresh[1] = compute.success();
             }
-        }
+		}
 
 
         running = !context->glfw.shouldClose() && !isKeyPressed(KeyCode::ESCAPE);
