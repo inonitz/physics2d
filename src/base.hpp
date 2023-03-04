@@ -55,7 +55,7 @@ static_assert(GET_ARG_COUNT(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 1
 #define aligned_free(ptr) _aligned_free(ptr)
 
 #else
-#   warning "Unknown compiler, there might be some troubles during compilation, such as undefined macros.
+#   warning "Unknown compiler, there might be some troubles during compilation, such as undefined macros."
 #endif
 
 

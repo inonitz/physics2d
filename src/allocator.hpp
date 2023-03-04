@@ -7,7 +7,7 @@
 template<typename T, bool DontFreeCreationPointer = false> struct StaticPoolAllocator
 {
 private:
-	using optionalOwnership = void*;
+	using optionalOwnership = void;
 	struct Node {
 		i64   index;
 		Node* next;
