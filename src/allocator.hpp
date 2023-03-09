@@ -68,7 +68,7 @@ public:
 	void create(optionalOwnership* __proper_memory, size_t amountOfElements)
 	{
 		buffer   = __scast(T*, __proper_memory);
-		freelist = _mm_malloc(sizeof(Node) * amountOfElements, sizeof(Node));
+		freelist = __scast(Node*,  _mm_malloc(sizeof(Node) * amountOfElements, sizeof(Node))  );
 		common_init(amountOfElements);
 		return;
 	}
@@ -103,7 +103,7 @@ public:
 	size_t allocate_index()
 	{
 		ifcrashdbg(!freeBlk);
-		T* v = &buffer[available->index - 1];
+		size_t v = available->index - 1;
 		available->index *= -1; /* now occupied */
 
 		available = available->next;

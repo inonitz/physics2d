@@ -1,16 +1,22 @@
 #include "allocator.hpp"
 #include <vector>
 #include <functional>
+#include <string>
 
 
 
 
-template<typename Key, typename Value>
+/* Hasher MUST overload the Following Functions: 
+	default Constructor
+	size_t operator(const_ref<Key>& k) [get hash Value       ] 
+	refresh() 						   [for changing the seed] 
+*/
+template<typename Key, typename Value, class Hasher>
 struct flat_hash
 {
 public:
-    using HashFunction    = std::function<u64(Key)>;
-    using CompareFunction = std::function<bool(Key, Key)>; /* MUST return 1 if keys match! */
+	using StringFromKV = std::function<std::string(const_ref<Key>, const_ref<Value>)>;
+
 
 #define INSERT_SUCCESS 0
 #define INSERT_FAIL_TABLE_FULL 1
@@ -47,22 +53,23 @@ private:
 			u8 bits; /* first 5 bits: occupation of each node. */
 			u8 pad[3];
 		} ctrl_t;
-		struct {
+		struct KeyNode {
 			Key key;
 			u32 index;
 		} Node[5];
 
 
-		KeyGroup() : ctrl_t{0b00000}, Node({ 
+		KeyGroup() : ctrl_t{0b00000, {0}}, Node{ 
 			{ 0, DEFAULT32 },
 			{ 0, DEFAULT32 },
 			{ 0, DEFAULT32 },
 			{ 0, DEFAULT32 },
 			{ 0, DEFAULT32 }
-		}) {}
+		} {}
 
-		__force_inline u8 first_available() const { return __builtin_ffs(~ctrl_t.bits) - 1; } /* get index to first available block.     */
-		__force_inline u8 first_occupied()  const { return __builtin_ffs(ctrl_t.bits) - 1;  } /* make sure NOT to call when bits == 0 :) */
+		__force_inline u8 first_available() const { return __builtin_ffs(~ctrl_t.bits) -1;  } /* get index to first available block.     */
+		__force_inline u8 first_occupied()  const { return __builtin_ffs(ctrl_t.bits) -1;   } /* make sure NOT to call when bits == 0 :) */
+		__force_inline u8 length() 			const { return __builtin_popcount(ctrl_t.bits); }
 		bool full()  const { return ctrl_t.bits == 0b11111; }
 		bool empty() const { return ctrl_t.bits == 0b00000; }
 		void push(const_ref<Key> key, u32 idx)
@@ -79,14 +86,30 @@ private:
 		u8 i = 5;
 		
 		i *= (m_buckets[bidx].ctrl_t.bits == 0);
-		while(cmp(key, m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
+		while( (key == m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
 		return i;
+	}
+
+
+	Value* bucket_lookup_ptr(u32 bidx, const_ref<Key> key)
+	{
+		u8  nidx = bucket_lookup(bidx, key);
+		u32 vidx = 0;
+		u64 ptr  = 0;
+		bool found = (nidx != 5);
+
+		/* instead of the if statement, we'll multiply each index value by the condition, that way we can avoid it. */
+		bidx *= found; /* found=false: will give bucket 0 */
+		nidx *= found; /* found=false: will give node   0 */
+		vidx = found * m_buckets[bidx].Node[nidx].index; /* found=false: will give m_values[0] */
+		ptr = found * __rcast(u64, &m_values[vidx]);     /* convert pointer to underlying value, multiply by boolean value for true pointer val */
+		return __rcast(Value*, ptr); 					 /* found=false: will return nullptr   */
 	}
 
 
 	u32 bucket_del(u32 bidx, const_ref<Key> key) { /* assume the KeyGroup will ALWAYS contain atleast a single element before deletion. */
 		u32 i = 0, valueIdx = 0;
-		while(cmp(key, m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
+		while( (key == m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
 
 
 		if(unlikely(i == 5)) /* i.e not found. */
@@ -104,7 +127,7 @@ private:
 	u32 bucket_del_nocleanup(u32 bidx, const_ref<Key> key)
 	{
 		u32 i = 0;
-		while( cmp(key, m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
+		while( (key == m_buckets[bidx].Node[i].key) != true && i < 5) ++i;
 
 		if(unlikely(i == 5)) return DEFAULT32;
 
@@ -120,88 +143,89 @@ private:
 		In most cases - it will. In VERY UNLIKELY cases, it won't.
 		Thats why I'm letting the user take care of this >:)
 	*/
-	bool grow_buckets_rehash(size_t newSize) {
+	bool rehash_table(size_t newSize)
+	{
 		std::vector<KeyGroup> newTable(newSize);
-		u64 bidx = 0;
-		u8  ctrl = 0, node;
-		bool bucketNotFull = true;
+		u8 insertSuccess = true, ctrl = 0, node = 0;
 
 
-		m_tableSize = 0;
-		auto& bucket = m_buckets[0];
-		for(size_t i = 0; bucketNotFull && i < m_buckets.size(); ++i) 
+		u32 bidx = 0;
+		hash.refresh();
+		for(auto& bucket : m_buckets)
 		{
-			bucket = m_buckets[i];
-			ctrl   = bucket.ctrl_t.bits;
-			while(ctrl && bucketNotFull) { /* find every occupied node and copy it to its new position */
-				node = bucket.first_occupied();
-				bidx = hash(bucket.Node[node].key) % newTable.size();
+			ctrl = bucket.ctrl_t.bits;
+			while(ctrl && insertSuccess) {
+				node = __builtin_ffs(ctrl) -1;
+				bidx = hash(bucket.Node[node].key) % newSize; /* recompute hash for new size. */
 
-
-				/* push first occupied node in current bucket (b) to new position in new table (newTable) */
-				newTable[bidx].push(
-					bucket.Node[node].key, 
-					bucket.Node[node].value
+				newTable[bidx].push( /* insert k, v pair to its new location in the new table. */
+					bucket.Node[node].key,
+					bucket.Node[node].index
 				);
-				++m_tableSize;
-
-				bucketNotFull = !newTable[bidx].full();
-				ctrl &= ~(1 << node); /* 'delete' the node from the bitmap, so we can go to next node. */
+				
+				// printf("calculated node %u at bucket %u with hash=%llX [key=%llu]\n", node, bidx, hash(bucket.Node[node].key), bucket.Node[node].key);
+				insertSuccess = !newTable[bidx].full();
+				ctrl = ctrl & ~(1u << node);
 			}
+
+
+			if(unlikely(!insertSuccess)) {
+				// debug_messagefmt("bucket %u is full. Can't re-hash table (bigger size needed) (bitfield=%u)\n", bidx, newTable[bidx].ctrl_t.bits);
+				break;
+			}
+			++bidx;
 		}
-		m_rehashed += bucketNotFull;
-		
-		
-		return bucketNotFull;
+
+
+
+		if(insertSuccess) {
+			m_buckets.swap(newTable);
+			++m_rehashed;
+		}
+		return insertSuccess;
 	}
 
 
 
-
 private:
-	HashFunction    hash;
-	CompareFunction cmp;
-
-
+	Hasher 				  hash;
 	/* Value allocator & Value buffer (we only Own the pointer, we do not Manage it) */
 	ValueManager 		  m_vmng;
 	Value*                m_values;
 	
 	std::vector<KeyGroup> m_buckets;
 	u32 				  m_tableSize;
-    u8                    m_rehashed;
-	u8 					  pad[3];
+    u32                   m_collisions;
+	u8                    m_rehashed;
+	u8 					  pad[7];
 
 
 public:
-    void overrideFunctors(const_ref<HashFunction> hasher, const_ref<CompareFunction> comparer) {
-        hash = hasher;
-        cmp  = comparer;
-        return;
-    }
-
-
 	void create(u32 buckets, u32 suggestedNodeAmount = 0)
 	{
 		m_buckets.resize(buckets);
 		
 		suggestedNodeAmount += (suggestedNodeAmount == 0) * minimumNodesFromBuckets(buckets);
+		markfmt("created table with %u elements, %u buckets\n", suggestedNodeAmount, buckets);
 		m_values = __scast(Value*,   _mm_malloc(sizeof(Value) * suggestedNodeAmount, round2(sizeof(Value)))  );
 		m_vmng.create(m_values, suggestedNodeAmount);
 
-		m_tableSize = 0;
-		m_rehashed  = 0;
+		m_tableSize  = 0;
+		m_rehashed   = 0;
+		m_collisions = 0;
 
-		constexpr KeyGroup tmp = { 0b00000, {0, DEFAULT32}, {0, DEFAULT32}, {0, DEFAULT32}, {0, DEFAULT32}, {0, DEFAULT32} };
+		static const KeyGroup tmp{};
 		std::fill(m_buckets.begin(), m_buckets.end(), tmp);
+		hash.refresh();
 		return;
 	}
 
 
 	void destroy()
 	{
-		m_tableSize = 0;
-		m_rehashed  = 0;
+		m_tableSize  = 0;
+		m_rehashed   = 0;
+		m_collisions = 0;
 		m_buckets.clear();
 		m_vmng.destroy();
 		_mm_free(m_values);
@@ -210,16 +234,8 @@ public:
 
 	
 	Value* lookup(const_ref<Key> k) {
-		u32 bidx = hash(k) % m_buckets.size(), vidx = 0;
-		u8  nidx = m_buckets[bidx].lookup(k);
-		bool found = (nidx != 5);
-
-
-		/* instead of the if statement, we'll multiply each index value by the condition, that way we can avoid it. */
-		bidx *= found; /* found=false: will give bucket 0 */
-		nidx *= found; /* found=false: will give node   0 */
-		vidx = found * m_buckets[bidx].Node[nidx].index; /* found=false: will give m_values[0] */
-		return found * &m_values[vidx];					 /* found=false: will return nullptr   */
+		u32 bidx = hash(k) % m_buckets.size();
+		return bucket_lookup_ptr(bidx, k);
 	}
 
 
@@ -228,15 +244,21 @@ public:
 		if(unlikely(m_vmng.size() == m_tableSize)) /* Hashtable needs resize */
 			return INSERT_FAIL_TABLE_FULL;
 
-		u32 idx = hash(k) % m_buckets.size();
-		if(unlikely(m_buckets[idx].full())) 
+		u32    idx  = hash(k) % m_buckets.size(), vidx = 0;
+		Value* find = bucket_lookup_ptr(idx, k);
+		if(unlikely(find == nullptr && m_buckets[idx].full())) 
 			return INSERT_FAIL_BUCKET_FULL; /* Hashtable needs resize */
 
-		
-		u32 vidx = m_vmng.allocate_index(); /* get new value from alloc */
-		m_buckets[idx].push(k, vidx); 	    /* push into available position in bucket */
-		m_values[vidx] = v; 		  	    /* set value to what we were given. */
-		++m_tableSize;						/* table increased in size.         */
+
+		if(likely(find == nullptr))
+		{
+			vidx = m_vmng.allocate_index(); /* get new value from alloc 			  */
+			m_buckets[idx].push(k, vidx); 	/* push into available position in bucket */
+			++m_tableSize; 					/* table increased in size.        		  */
+			m_collisions += m_buckets[idx].length() > 1; /* another collision occured if AFTER INSERTION there's atleast 2 elements. */
+			find = &m_values[vidx];
+		}
+		*find = v; /* set value to what we were given. */
 
 
 		// if(current_load() > cm_load_factor) { /* hash table re-hashing will be the users' job */
@@ -254,29 +276,100 @@ public:
 		if(unlikely(m_buckets[idx].empty())) 
 			return DELETE_FAIL_BUCKET_EMPTY;
 		
-		u32 vidx = m_buckets[idx].del(k);
+		u32 vidx = bucket_del(idx, k);
 		if(unlikely(vidx == DEFAULT32))
 			return DELETE_FAIL_KEY_NOT_FOUND;
 
 
 		m_vmng.free_index(vidx);
+		--m_tableSize;
 		return DELETE_SUCCESS;
 	}
 
 
 	bool rehash(size_t suggestedNewSize = 0)
 	{
-		size_t tmp = __scast(size_t, __scast(f32, m_tableSize) * cm_growth_factor );
+		size_t tmp = __scast(size_t, __scast(f32, m_buckets.size()) * cm_growth_factor );
 		suggestedNewSize += (suggestedNewSize == 0) * tmp;
-		return grow_buckets_rehash(suggestedNewSize);
+		return rehash_table(suggestedNewSize);
 	}
 
 
 	bool   need_rehash() const { return current_load() > cm_load_factor; }
-	bool   full() const  { return m_tableSize == m_vmng.size(); }
-	bool   empty() const { return m_tableSize == 0; }
-	size_t size() const  { return m_tableSize;      }
-	Value* data() const  { return m_values;    	    }
+	bool   full()     const { return m_tableSize == m_vmng.size(); }
+	bool   empty()    const { return m_tableSize == 0; 			   }
+	size_t buckets()  const { return m_buckets.size(); 			   }
+	size_t size()     const { return m_tableSize;      			   }
+	size_t max_size() const { return m_vmng.size();    			   }
+	Value* data()     const { return m_values;    	   			   }
+
+
+	void to_file(const_ref<StringFromKV> print, FILE* file=stdout)
+	{
+		fprintf(file, "Hashtable:\n    %llu Buckets\n    %u/%llu Nodes [%u Allocated (%llu Bytes)]\n    %5u Collisions\n    %u     Re-hashes\n    Contents:\n",
+			m_buckets.size(),
+			m_tableSize,
+			m_vmng.size(),
+			m_tableSize,
+			m_tableSize * sizeof(KeyGroup),
+			m_collisions,
+			m_rehashed
+		);
+		fprintf(file, "    [Bucket ID] [  Nodes   ]: [key, value] => [... , ...]\n");
+
+
+		size_t ctrl = 0, node = 0;
+		std::string tmpstr;
+
+
+		for(size_t i = 0; i < m_buckets.size(); ++i)
+		{
+			ctrl = m_buckets[i].ctrl_t.bits;
+			fprintf(file, "    [%9llu] [%u Elements]: ", i, __builtin_popcountll(ctrl));
+
+			while(ctrl)
+			{
+				node   = __builtin_ffsll(ctrl) -1;
+				tmpstr = print(
+					m_buckets[i].Node[node].key, 
+					m_values[m_buckets[i].Node[node].index]
+				);
+				fprintf(file, " [%s] --> ", tmpstr.c_str());
+				ctrl = ctrl & ~(1u << node);
+			}
+			fprintf(file, " || \n");
+		}
+		return;
+	}
+
+
+	/*
+	   fnType = 0: Insert
+	   fnType = 1: Lookup
+	   fnType = 2: Delete
+	   fnType = 3: Rehash
+	   NOTE: 
+	   	statusCode for lookup is value_ptr == nullptr,
+		otherwise its the statusCode returned from the function.
+	*/
+	static const char* statusToString(u8 fnType, u8 statusCode) 
+	{
+		static constexpr std::array<const char*, 11> statusCodes = {
+			"INSERT_SUCCESS           ",
+			"INSERT_FAIL_TABLE_FULL   ",
+			"INSERT_FAIL_BUCKET_FULL  ",
+			"LOOKUP_SUCCESS           ", /* Returned ptr != nullptr */
+			"LOOKUP_FAIL_NOT_FOUND    ",
+			"DELETE_SUCCESS           ",
+			"DELETE_FAIL_TABLE_EMPTY  ",
+			"DELETE_FAIL_BUCKET_EMPTY ",
+			"DELETE_FAIL_KEY_NOT_FOUND",
+			"REHASH_FAIL             ",
+			"REHASH_SUCCESS           "
+		};
+		static constexpr u8 offsets[4] = { 0, 3, 5, 9 };
+		return statusCodes[offsets[fnType] + statusCode];
+	}
 
 
 	#undef INSERT_FAIL_BUCKET_FULL
