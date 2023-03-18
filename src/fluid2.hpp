@@ -1,8 +1,16 @@
 #pragma once
 #include "vec.hpp"
 #include "matrix.hpp"
+#include <cmath>
 
 
+
+
+constexpr f32 DivByZeroEpsilon = 1e-20;
+
+
+#define DIVISOR_NOT_ZERO(val) (val + DivByZeroEpsilon)
+#define INVERSE(val) (1.0f / DIVISOR_NOT_ZERO(val))
 
 
 using Vec3 = math::vec3f;
@@ -67,54 +75,104 @@ template<u16 __N> void ForwardSolver(Matrixf<__N> A, Vectorf<__N>& x, Vectorf<__
 }
 
 
-// template<u16 __N> void SSOR_Preconditioner(Matrixf<__N> A, Matrixf<__N>& M, Matrixf<__N>& N)
-// {
-// 	Matrixf<__N> L{0.0f};
-// 	Vectorf<__N> invD;
 
-// 	for(size_t i = 0; i < __N; ++i) {
-// 		invD = (1.0f / )
-// 	}
-// }
-
-
-template<u16 N> void PCG_SolveZ(Matrixf<N> M, Vectorf<N>& z, Vectorf<N> r)
+/* 
+	Matrix 'L' MUST be init to 0!
+	A will be modified, make sure it is a copy.
+	(
+		Unfortunately I didn't spend enough time to optimize the algorithm,
+		besides extracting the diagonal first. 
+	)
+*/
+template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N> A, Matrixf<__N>& L)
 {
+	Vectorf<__N> diagRoots{0.0f};
+	f32 tmp{0.0f};
+	
+	for(u16 i = 0; i < __N; ++i) {
+		diagRoots[i] = INVERSE( std::sqrt(A(i, i)) ); 
+	}
 
+
+	// /*
+	// 	for Row in L:
+	// 		Row = ElementWiseMul(Row(A), diagRoots);
+	// 	NOTE: We're only setting the Upper-Triangular Part of the Matrix,
+	// 	As L^T is that type of matrix. 
+	// */
+	// L(0, 0) = diagRoots[0];
+	// for(u16 k = 1; k < __N - 1; ++k)
+	// {
+	// 	for(u16 i = k + 1; i < __N; ++i) {
+	// 		L(k, i) = A(k, i) * diagRoots[k];
+	// 	}
+	// }
+	// L(__N - 1, __N - 1) = diagRoots[__N - 1];
+
+
+	for(u16 k = 0; k < __N - 1; ++k)
+	{
+		for(u16 i = k + 1; i < __N; ++i) {
+			L(k, i) = A(k, i) * diagRoots[k];
+		}
+		for(u16 i = k + 1; i < __N; ++i) 
+		{	
+			/* Blocking Can Improve the performance of this significantly for better cache usage. */
+			for(u16 j = i; j < __N; ++j) {
+				tmp = L(k, i) * L(k, j); /* element-wise-mul between the upper row in L to the upper column in L */
+				tmp *= boolean( A(i, j) != 0.0f );
+				A(i, j) -= tmp;
+			}
+		}
+	}
+
+
+	return;
 }
 
 
-template<u16 N> void PreconditionedConjugateGradient(Matrixf<N> A, Matrixf<N> M, Vectorf<N>& initialX, Vectorf<N> b, f32 tolerance = 1e-6f, u16 max_iter = 100)
+
+
+template<u16 N> bool PreconditionedConjugateGradient(Matrixf<N> A, Matrixf<N> Minv, Vectorf<N>& initialX, Vectorf<N> b, f32 tolerance = 1e-6f, u16 max_iter = 100)
 {
-	Vectorf<N> residue = b, z, p, w, tmp;
+	Vectorf<N> residue = b, z, p, Ap, tmp;
 	f32 alpha, beta;
-	
-	if(initialX.magnitude() > 1.0f) { /* This is expensive, so just incase initialX is NOT the 0 vector. */
-		b -= A * initialX;
+
+
+	if(initialX.mag() > 1.0f) { /* This is expensive, so just incase initialX is NOT the 0 vector. */
+		residue -= A * initialX;
 	}
 
 
-	PCG_SolveZ(M, z, residue); /* z_0 */
+	z = Minv * residue; /* z_0 = M^-1 * r0 */
 	p = z; /* p1 */
-	w = A * p; 
-	tmp = Vectorf<N>::dot(residue, z); /* r0_T * z0 */
-	alpha = tmp * (1.0f / Vectorf<N>::dot(p, w)); /* above / (p1_T * W) */
-	initialX += alpha * p; /* x1 = x0 + a1*p1 */
-	residue  -= alpha * w; /* r1 = r0 - a1*w */
+	Ap = A * p; /* Save computation cost */
 
 
-	for(size_t i = 0; residue.magnitude() > tolerance && i < max_iter; ++i)
-	{
-		PCG_SolveZ(M, z, residue); /* solve for z_k */
-		beta = Vectorf<N>::dot(residue, z) * (1.0f / tmp); /* beta_k */
-		tmp  = Vectorf<N>::dot(residue, z);
+	alpha = INVERSE(dot(p, Ap));       /* (p1_T * Ap)^-1  */
+	tmp   = dot(residue, z);      /* r0_T * z0 	  */
+	alpha *= tmp;
+	initialX += alpha * p; 				/* x1 = x0 + a1*p1 */
+	residue  -= alpha * Ap; 			/* r1 = r0 - a1*Ap0*/
+	--max_iter;
 
-		p = z + beta * p; /* p_z+1 */
-		w = A * p;
-		alpha = tmp * (1.0f / Vectorf<N>::dot(p, w)); /* a_k+1 */
-		initialX -= alpha * p; /* x_k+1 */
-		residue  -= alpha * w; /* r_k+1 */
-	}
 
-	return;
+	do {
+		z = Minv * residue; 			   /* z_k = M^-1 * r_k */
+		beta = dot(residue, z) * tmp; /* beta_k =  */
+		p = z + beta * p;				   /* p_k+1  */
+		Ap = A * p; 					   /* Ap_k+1 */
+		
+
+		tmp   = dot(residue, z);
+		alpha = INVERSE(dot(p, Ap));
+		alpha *= tmp; 			           /* a_k+1 */
+		initialX += alpha * p;             /* x_k+1 */
+		residue  -= alpha * Ap;            /* r_k+1 */
+
+		--max_iter;
+	} while(residue.mag() > tolerance && max_iter);
+
+
+	return max_iter == 0; /* Success if not reached 0. */
 }

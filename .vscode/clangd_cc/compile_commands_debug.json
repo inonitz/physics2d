@@ -1,9 +1,7 @@
 [
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-gcc",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-gcc",
             "-std=c11",
             "-c",
             "-pedantic",
@@ -15,22 +13,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/glad/glad_c.o",
             "src/include/glad/glad.c"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/glad/glad.c",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/glad/glad_c.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/glad/glad.c",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/glad/glad_c.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -42,22 +36,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/base_cpp.o",
             "src/base.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/base.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/base_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/base.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/base_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -69,22 +59,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/callbackHooks_cpp.o",
             "src/callbackHooks.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/callbackHooks.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/callbackHooks_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/callbackHooks.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/callbackHooks_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -96,22 +82,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/camera_cpp.o",
             "src/camera.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/camera.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/camera_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/camera.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/camera_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -123,22 +105,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/context_cpp.o",
             "src/context.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/context.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/context_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/context.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/context_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -150,22 +128,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/file_cpp.o",
             "src/file.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/file.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/file_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/file.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/file_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -177,22 +151,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_cpp.o",
             "src/include/ImGui/imgui.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -204,22 +174,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_draw_cpp.o",
             "src/include/ImGui/imgui_draw.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui_draw.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_draw_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_draw.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_draw_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -231,22 +197,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o",
             "src/include/ImGui/imgui_impl_glfw.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui_impl_glfw.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_impl_glfw.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -258,22 +220,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o",
             "src/include/ImGui/imgui_impl_opengl3.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui_impl_opengl3.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_impl_opengl3.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -285,22 +243,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_tables_cpp.o",
             "src/include/ImGui/imgui_tables.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui_tables.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_tables_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_tables.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_tables_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -312,22 +266,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/ImGui/imgui_widgets_cpp.o",
             "src/include/ImGui/imgui_widgets.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/ImGui/imgui_widgets.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/ImGui/imgui_widgets_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_widgets.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_widgets_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -339,22 +289,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/glm/detail/glm_cpp.o",
             "src/include/glm/detail/glm.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/glm/detail/glm.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/glm/detail/glm_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/glm/detail/glm.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/glm/detail/glm_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -366,22 +312,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/include/stb_image/stb_image_cpp.o",
             "src/include/stb_image/stb_image.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/include/stb_image/stb_image.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/include/stb_image/stb_image_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/include/stb_image/stb_image.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/stb_image/stb_image_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -393,22 +335,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/main/basicpp_cpp.o",
             "src/main/basicpp.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/main/basicpp.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/main/basicpp_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/main/basicpp.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/basicpp_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -420,22 +358,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/main/example_cpp.o",
             "src/main/example.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/main/example.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/main/example_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/main/example.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/example_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -447,22 +381,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/main/test_cpp.o",
             "src/main/test.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/main/test.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/main/test_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/main/test.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/test_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -474,22 +404,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/main_cpp.o",
             "src/main.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/main.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/main_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/main.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -501,22 +427,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/shader_cpp.o",
             "src/shader.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/shader.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/shader_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/shader.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/shader_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -528,22 +450,18 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/vec_cpp.o",
             "src/vec.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/vec.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/vec_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/vec.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/vec_cpp.o"
     },
     {
         "arguments": [
-            "\"C:/Program",
-            "Files/Programming",
-            "Utillities/mingw-ucrt\"/bin/x86_64-w64-mingw32-g++",
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
             "-std=c++17",
             "-c",
             "-pedantic",
@@ -555,15 +473,13 @@
             "-g",
             "-O1",
             "-D_DEBUG",
-            "-I\"C:/Program",
-            "Files/Programming",
-            "Utillities/CProjects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-o",
             "build/debug/obj/window_cpp.o",
             "src/window.cpp"
         ],
-        "directory": "/c/Program Files/Programming Utillities/CProjects/mglw-strip",
-        "file": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/src/window.cpp",
-        "output": "/c/Program Files/Programming Utillities/CProjects/mglw-strip/build/debug/obj/window_cpp.o"
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/window.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/window_cpp.o"
     }
 ]
