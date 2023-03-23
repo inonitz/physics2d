@@ -17,6 +17,7 @@ using Vec3 = math::vec3f;
 using Vec4 = math::vec4f;
 using Mat4 = math::mat4f;
 using Pressure = f32;
+using Velocity = f32;
 
 
 struct GridCell {
@@ -29,13 +30,6 @@ struct GridCell {
 };
 
 
-struct Fluid
-{
-	f32 dx;
-	f32 u_max;
-	f32 k_cfl;
-	f32 dt;	
-};
 
 
 /* Solve for Linear System Ax = b, where A is a Unit-Lower-Triangular Matrix. */
@@ -84,7 +78,43 @@ template<u16 __N> void ForwardSolver(Matrixf<__N> A, Vectorf<__N>& x, Vectorf<__
 		besides extracting the diagonal first. 
 	)
 */
-template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N> A, Matrixf<__N>& L)
+// template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N> A, Matrixf<__N>& L)
+// {
+// 	Vectorf<__N> diagRoots{0.0f};
+// 	f32 tmp{0.0f};
+	
+// 	for(u16 i = 0; i < __N; ++i) {
+// 		diagRoots[i] = INVERSE( std::sqrt(A(i, i)) ); 
+// 	}
+
+
+// 	for(u16 k = 0; k < __N - 1; ++k)
+// 	{
+// 		for(u16 i = k + 1; i < __N; ++i) {
+// 			L(k, i) = A(k, i) * diagRoots[k];
+// 		}
+// 		for(u16 i = k + 1; i < __N; ++i) 
+// 		{	
+// 			/* Blocking Can Improve the performance of this significantly for better cache usage. */
+// 			for(u16 j = i; j < __N; ++j) {
+// 				tmp = L(k, i) * L(k, j); /* element-wise-mul between the upper row in L to the upper column in L */
+// 				tmp *= boolean( A(i, j) != 0.0f );
+// 				A(i, j) -= tmp;
+// 			}
+// 		}
+// 	}
+// 	return;
+// }
+
+
+/* 
+	Use SparseMatrix Struct for this, 
+	this is inefficient as hell without a bitmap or something (or Blocking for that matter lol)
+	Source (Only Pseudocode Correct): https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization
+
+	NOTE: This is The Triangular-Lower Part L. The True preconditioner is (L * L^T)
+*/
+template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N>& A)
 {
 	Vectorf<__N> diagRoots{0.0f};
 	f32 tmp{0.0f};
@@ -94,36 +124,20 @@ template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N> A, Matrixf<
 	}
 
 
-	// /*
-	// 	for Row in L:
-	// 		Row = ElementWiseMul(Row(A), diagRoots);
-	// 	NOTE: We're only setting the Upper-Triangular Part of the Matrix,
-	// 	As L^T is that type of matrix. 
-	// */
-	// L(0, 0) = diagRoots[0];
-	// for(u16 k = 1; k < __N - 1; ++k)
-	// {
-	// 	for(u16 i = k + 1; i < __N; ++i) {
-	// 		L(k, i) = A(k, i) * diagRoots[k];
-	// 	}
-	// }
-	// L(__N - 1, __N - 1) = diagRoots[__N - 1];
-
-
-	for(u16 k = 0; k < __N - 1; ++k)
+	for(size_t k = 0; k < __N; ++k)
 	{
-		for(u16 i = k + 1; i < __N; ++i) {
-			L(k, i) = A(k, i) * diagRoots[k];
+		for(size_t i = k + 1; i < __N; ++i) {
+			if(A(i, k) != 0.0f) { A(i, k) *= diagRoots[k]; }
 		}
-		for(u16 i = k + 1; i < __N; ++i) 
-		{	
-			/* Blocking Can Improve the performance of this significantly for better cache usage. */
-			for(u16 j = i; j < __N; ++j) {
-				tmp = L(k, i) * L(k, j); /* element-wise-mul between the upper row in L to the upper column in L */
-				tmp *= boolean( A(i, j) != 0.0f );
-				A(i, j) -= tmp;
+		
+		for(size_t j = k + 1; j < __N; ++j) {
+			for(size_t i = j; i < __N; ++i) {
+				A(i, j) -= A(i, k)*A(j, k);
 			}
 		}
+	}
+	for(size_t i = 0; i < __N; ++i) { 
+		std::fill(&A.data()[i+1 + i*__N], &A.data()[__N - 1 + i*__N], 0.0f);
 	}
 
 

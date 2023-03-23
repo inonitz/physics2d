@@ -1,4 +1,5 @@
 #include "allocator.hpp"
+#include "hash.hpp"
 #include <vector>
 #include <functional>
 #include <string>
@@ -11,7 +12,7 @@
 	size_t operator(const_ref<Key>& k) [get hash Value       ] 
 	refresh() 						   [for changing the seed] 
 */
-template<typename Key, typename Value, class Hasher>
+template<typename Key, typename Value, class Hasher = Hash>
 struct flat_hash
 {
 public:
@@ -28,7 +29,7 @@ public:
 #define DELETE_FAIL_KEY_NOT_FOUND 3
 
 private:
-	using ValueManager    = StaticPoolAllocator<Value, true>;
+	using ValueManager = StaticPoolAllocator<Value, true>;
 	static constexpr f32 cm_growth_factor = 1.5f;
     static constexpr f32 cm_load_factor   = 0.70f;
 

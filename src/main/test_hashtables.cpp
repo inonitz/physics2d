@@ -91,7 +91,7 @@ int testing_hashtables()
 	{
 		__MEASURE(timer, failed = table.insert(i, randCells[i]));
 		fprintf(bench_data, "Insert [%3llu=%s] [key=%3llu, value_ptr=%p] Took %lluns\n", i, table.statusToString(0, failed), i, (void*)&randCells[i], timer.duration().count());
-		i -= failed > 0;
+		i -= failed > 0; /* we repeat the test at i if it didn't succeed. */
 
 		while(failed > 0) { /* meaning NOT successful. */ 
 			newSize = (newSize * 3) / 2;

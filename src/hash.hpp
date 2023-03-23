@@ -1,5 +1,6 @@
 #pragma once
 #include "base.hpp"
+#include "random.hpp"
 
 
 
@@ -45,4 +46,18 @@ __force_inline u64 MurmurHash64A(const void * key, i32 len, u64 seed)
 	h ^= h >> r;
 
 	return h;
-} 
+}
+
+
+
+
+struct Hash { /* Default Hash Struct Overload for flat_hash */
+	size_t seed;
+
+	Hash() : seed{random64u()} {}
+	size_t operator()(u64 key) { return MurmurHash64A(&key, 8, seed); }
+	void refresh() { 
+		markfmt("hash::refresh() switched to new seed=0x%llX\n", seed);
+		seed = random64u(); return;
+	}
+};
