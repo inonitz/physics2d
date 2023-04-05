@@ -16,6 +16,7 @@ constexpr f32 DivByZeroEpsilon = 1e-20;
 using Vec3 = math::vec3f;
 using Vec4 = math::vec4f;
 using Mat4 = math::mat4f;
+using GridPosition = math::vec3u;
 using Pressure = f32;
 using Velocity = f32;
 
@@ -117,7 +118,7 @@ template<u16 __N> void ForwardSolver(Matrixf<__N> A, Vectorf<__N>& x, Vectorf<__
 template<u16 __N> void IncompleteCholeskyPreconditioner(Matrixf<__N>& A)
 {
 	Vectorf<__N> diagRoots{0.0f};
-	f32 tmp{0.0f};
+	// f32 tmp{0.0f};
 	
 	for(u16 i = 0; i < __N; ++i) {
 		diagRoots[i] = INVERSE( std::sqrt(A(i, i)) ); 

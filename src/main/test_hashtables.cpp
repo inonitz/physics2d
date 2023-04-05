@@ -28,18 +28,6 @@ template<u8 type> struct GridCell {
 };
 
 
-struct Hash {
-	size_t seed;
-
-	Hash() : seed{random64u()} {}
-	size_t operator()(u64 key) { return MurmurHash64A(&key, 8, seed); }
-	void refresh() { 
-		markfmt("hash::refresh() switched to new seed=0x%llX\n", seed);
-		seed = random64u(); return;
-	}
-};
-
-
 
 
 static Timer<> 		  	 		   	     timer{};
@@ -62,14 +50,15 @@ static auto printTableElement = [](size_t key, GridCell<0>) -> std::string {
 
 
 
-int testing_hashtables()
+int test_hashtables()
 {
 	table.create(192, 0);
 
 
+	static std::array<f32, 5> tmp;
 	for(auto& e : randCells) 
 	{
-		static std::array<f32, 5> tmp = {
+		tmp = {
 			random32f(),
 			random32f(),
 			random32f(),
@@ -91,8 +80,8 @@ int testing_hashtables()
 	{
 		__MEASURE(timer, failed = table.insert(i, randCells[i]));
 		fprintf(bench_data, "Insert [%3llu=%s] [key=%3llu, value_ptr=%p] Took %lluns\n", i, table.statusToString(0, failed), i, (void*)&randCells[i], timer.duration().count());
-		i -= failed > 0; /* we repeat the test at i if it didn't succeed. */
 
+		i -= failed > 0; /* we repeat the test at i if it didn't succeed. */
 		while(failed > 0) { /* meaning NOT successful. */ 
 			newSize = (newSize * 3) / 2;
 			markfmt("newSize computed=%u\n", newSize);
@@ -131,13 +120,40 @@ int testing_hashtables()
 	{
 		k = random32u() % randCellCount + (random32u() & 0xFF);
 		__MEASURE(timer, failed = table.del(k));
+		// table.printIterator();
 		fprintf(bench_data, "Deletion [%3llu=%s] [key=%3llu, value_ptr=%p] Took %lluns\n", i, table.statusToString(2, failed), k, (void*)&randCells[k], timer.duration().count());
 	}
+
+
+	/* Test Iterator */
+	for(auto& elem : table) {
+		fprintf(bench_data, "Iterator At [val=%3f, value_ptr=%p, idx=%llu]\n", elem.p, (void*)&elem, &elem - table.data());
+	}
+	__MEASURE(timer, { /* Measure busy loop */
+		for(auto& elem : table) {
+			(void(elem));
+			__asm__ volatile("");
+		}
+	});
+	fprintf(bench_data, "Iterator [length=%llu] Took %lluns\n", table.size(), timer.duration().count());
+
+
+	/* Test [index, value] Iterator */
+	for(auto& [value, index]: table.asMapIterator()) {
+		fprintf(bench_data, "Iterator At [value_ptr=%p, idx=%llu]\n", (void*)value, index);
+	}
+	__MEASURE(timer, { /* Measure busy loop */
+		for(auto& [value, index]: table.asMapIterator()) {
+			(void(value));
+			(void(index));
+			__asm__ volatile("");
+		}
+	});
+	fprintf(bench_data, "Iterator [length=%llu] Took %lluns\n", table.size(), timer.duration().count());
+
+
+
 	table.to_file(printTableElement, bench_data);
-
-
-
-
 	fclose(bench_data);
 	return 0;
 }

@@ -287,196 +287,196 @@ public:
 };
 
 
-template<typename T, u16 RowLength> struct SparseMatrix
-{
-private:
-	T* __data;
-	std::vector<u32> IndexJ;
-	std::vector<u32> IndexI;
-	u32 nnz;
-	u32 lastI;
+// template<typename T, u16 RowLength> struct SparseMatrix
+// {
+// private:
+// 	T* __data;
+// 	std::vector<u32> IndexJ;
+// 	std::vector<u32> IndexI;
+// 	u32 nnz;
+// 	u32 lastI;
 
 
-	bool allocate() {
-		size_t alloc_size = (sizeof(T) * nnz);
-		if constexpr (sizeof(T) % 2 == 0) {
-			__data = amalloc_t(T, alloc_size, sizeof(T)); 
-		} else {
-			__data = malloc(alloc_size);
-		}
+// 	bool allocate() {
+// 		size_t alloc_size = (sizeof(T) * nnz);
+// 		if constexpr (sizeof(T) % 2 == 0) {
+// 			__data = amalloc_t(T, alloc_size, sizeof(T)); 
+// 		} else {
+// 			__data = malloc(alloc_size);
+// 		}
 
-		IndexJ.resize(nnz);
-		IndexI.resize(RowLength + 1);
-		return __data == nullptr;
-	}
-
-
-	void destroy() {
-		if constexpr (sizeof(T) % 2 == 0) { 
-			afree_t(__data);
-		} 
-		else { 
-			free(__data);
-		}
-		__data = nullptr;
-		return;
-	}
+// 		IndexJ.resize(nnz);
+// 		IndexI.resize(RowLength + 1);
+// 		return __data == nullptr;
+// 	}
 
 
-	void copy(T* other) { memcpy(__data, other, (sizeof(T) * nnz)); return; }
+// 	void destroy() {
+// 		if constexpr (sizeof(T) % 2 == 0) { 
+// 			afree_t(__data);
+// 		} 
+// 		else { 
+// 			free(__data);
+// 		}
+// 		__data = nullptr;
+// 		return;
+// 	}
 
 
-	/*
-		Rewrite this based on: https://www.youtube.com/watch?v=a2LXVFmGH_Q (Wikipedia poopoo)
-	*/
-	void construct(Matrix<T, RowLength> M)
-	{
-		constexpr size_t 
-			shrink = 8 * sizeof(u64), 
-			RowDiv = RowLength / shrink, 
-			RowMod = RowLength % shrink;
-
-		constexpr size_t bitmapRow = RowDiv + boolean(RowMod);
+// 	void copy(T* other) { memcpy(__data, other, (sizeof(T) * nnz)); return; }
 
 
-		std::array<u64, bitmapRow * RowLength> bitmap; /* Construct Bitmap for all non-zeros. */
-		size_t j = 0, i = 0;
-		u32 nz = 0, nzAccum = 0, push = 0;
-		u64 eqz = 0, eightElems = 0, packed_bits = 0;
+// 	/*
+// 		Rewrite this based on: https://www.youtube.com/watch?v=a2LXVFmGH_Q (Wikipedia poopoo)
+// 	*/
+// 	void construct(Matrix<T, RowLength> M)
+// 	{
+// 		constexpr size_t 
+// 			shrink = 8 * sizeof(u64), 
+// 			RowDiv = RowLength / shrink, 
+// 			RowMod = RowLength % shrink;
+
+// 		constexpr size_t bitmapRow = RowDiv + boolean(RowMod);
 
 
-		for(size_t bm_i = 0; bm_i < RowLength; ++bm_i) {
+// 		std::array<u64, bitmapRow * RowLength> bitmap; /* Construct Bitmap for all non-zeros. */
+// 		size_t j = 0, i = 0;
+// 		u32 nz = 0, nzAccum = 0, push = 0;
+// 		u64 eqz = 0, eightElems = 0, packed_bits = 0;
 
-			for(size_t bm_j = 0; bm_j < bitmapRow - 1; ++bm_j) 
-			{ /* All elements from 0 -> bitmapRow - 1 represent 64 elements. the last one represents (RowLength % 64) elements */
-				eqz = 0;
-				/* Reducing 64 Elements to a single u64 bitmap */
-				for(u8 boolIdx = 0; boolIdx < 8; ++boolIdx) {
-					eightElems = 0;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 0] != ((T)0) ) << 0;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 1] != ((T)0) ) << 1;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 2] != ((T)0) ) << 2;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 3] != ((T)0) ) << 3;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 4] != ((T)0) ) << 4;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 5] != ((T)0) ) << 5;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 6] != ((T)0) ) << 6;
-					eightElems |= boolean( M.data()[i + 8 * boolIdx + 7] != ((T)0) ) << 7;
-					eqz |= ( eightElems << (8 * boolIdx) );
-				}
-				bitmap[bm_j + bm_i * bitmapRow] = eqz;
-				i += shrink;
-			}
+
+// 		for(size_t bm_i = 0; bm_i < RowLength; ++bm_i) {
+
+// 			for(size_t bm_j = 0; bm_j < bitmapRow - 1; ++bm_j) 
+// 			{ /* All elements from 0 -> bitmapRow - 1 represent 64 elements. the last one represents (RowLength % 64) elements */
+// 				eqz = 0;
+// 				/* Reducing 64 Elements to a single u64 bitmap */
+// 				for(u8 boolIdx = 0; boolIdx < 8; ++boolIdx) {
+// 					eightElems = 0;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 0] != ((T)0) ) << 0;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 1] != ((T)0) ) << 1;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 2] != ((T)0) ) << 2;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 3] != ((T)0) ) << 3;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 4] != ((T)0) ) << 4;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 5] != ((T)0) ) << 5;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 6] != ((T)0) ) << 6;
+// 					eightElems |= boolean( M.data()[i + 8 * boolIdx + 7] != ((T)0) ) << 7;
+// 					eqz |= ( eightElems << (8 * boolIdx) );
+// 				}
+// 				bitmap[bm_j + bm_i * bitmapRow] = eqz;
+// 				i += shrink;
+// 			}
 			
-			eightElems = 0; /* Complete the remainder of the elements. Might actually be also 64 if RowLength is divisible but oh well */
-			for(size_t r = 0; r < RowMod; ++r) 
-			{
-				eightElems |= boolean( M.data()[i + r] != ((T)0) ) << r;
-			}
-			bitmap[bitmapRow - 1 + bm_i * bitmapRow] = eightElems;
-			i += RowMod;
-		}
+// 			eightElems = 0; /* Complete the remainder of the elements. Might actually be also 64 if RowLength is divisible but oh well */
+// 			for(size_t r = 0; r < RowMod; ++r) 
+// 			{
+// 				eightElems |= boolean( M.data()[i + r] != ((T)0) ) << r;
+// 			}
+// 			bitmap[bitmapRow - 1 + bm_i * bitmapRow] = eightElems;
+// 			i += RowMod;
+// 		}
 
 
-		/* 
-			Size of IndexJ, __data is the amount of Non-Zero Elements in M.
-			Afterwards We !!Allocate Memory!!
-		*/
-		for(auto& notZero64 : bitmap) { nz += __builtin_popcountll(notZero64); }
-		nnz = nz;
-		allocate();
-		IndexI[0] = 0;
+// 		/* 
+// 			Size of IndexJ, __data is the amount of Non-Zero Elements in M.
+// 			Afterwards We !!Allocate Memory!!
+// 		*/
+// 		for(auto& notZero64 : bitmap) { nz += __builtin_popcountll(notZero64); }
+// 		nnz = nz;
+// 		allocate();
+// 		IndexI[0] = 0;
 
 
-		/* Construct IndexI */
-		/* 
-			In the current 
-		*/
-		nz = 0;
-		for(i = 0; i < RowLength; ++i) 
-		{
-			u8 idx = 0;
-			for(j = 0; j < bitmapRow; ++j) {
-				packed_bits = bitmap[j + i * bitmapRow];
-				while(packed_bits) {
-					idx = __builtin_ffsll(packed_bits); /* retrieve index of lsb [find first non-zero element INDEX]   */
-					packed_bits &= ~(1 << idx); 	    /* turn it off for next iter */
+// 		/* Construct IndexI */
+// 		/* 
+// 			In the current 
+// 		*/
+// 		nz = 0;
+// 		for(i = 0; i < RowLength; ++i) 
+// 		{
+// 			u8 idx = 0;
+// 			for(j = 0; j < bitmapRow; ++j) {
+// 				packed_bits = bitmap[j + i * bitmapRow];
+// 				while(packed_bits) {
+// 					idx = __builtin_ffsll(packed_bits); /* retrieve index of lsb [find first non-zero element INDEX]   */
+// 					packed_bits &= ~(1 << idx); 	    /* turn it off for next iter */
 
-					++nz; 								/* found another non-zero */
-					IndexJ.push_back(j); 			/* push its column-index  */
-					__data[push] = M.data()[(i * bitmapRow + j) * shrink + idx]; /* push value to __data, 3d->1d array access, where dims are (bitmapRow, RowLength, 64) */
-					++push;
-				}
-			}
+// 					++nz; 								/* found another non-zero */
+// 					IndexJ.push_back(j); 			/* push its column-index  */
+// 					__data[push] = M.data()[(i * bitmapRow + j) * shrink + idx]; /* push value to __data, 3d->1d array access, where dims are (bitmapRow, RowLength, 64) */
+// 					++push;
+// 				}
+// 			}
 
-			nzAccum += nz;
-			nz = 0;
-			IndexI.push_back(nzAccum);
-		}
+// 			nzAccum += nz;
+// 			nz = 0;
+// 			IndexI.push_back(nzAccum);
+// 		}
 
-		lastI = IndexI.back();
-		return;
-	}
-
-
-public:
-	SparseMatrix(): __data{nullptr}, IndexJ(), IndexI() {}
-	SparseMatrix(Matrix<T, RowLength> matrix) 
-	{
-		ifcrashdbg(allocate());
-		construct(matrix);
-		return;
-	}
+// 		lastI = IndexI.back();
+// 		return;
+// 	}
 
 
-	SparseMatrix(SparseMatrix& cpy) 
-	{
-		allocate();
-		copy(cpy.__data);
-		return;
-	}
+// public:
+// 	SparseMatrix(): __data{nullptr}, IndexJ(), IndexI() {}
+// 	SparseMatrix(Matrix<T, RowLength> matrix) 
+// 	{
+// 		ifcrashdbg(allocate());
+// 		construct(matrix);
+// 		return;
+// 	}
 
 
-	SparseMatrix& operator=(SparseMatrix& cpy)  
-	{ 
-		if(likely(__data == nullptr)) 
-			allocate();
-
-		copy(cpy.__data);
-		return *this;
-	}
+// 	SparseMatrix(SparseMatrix& cpy) 
+// 	{
+// 		allocate();
+// 		copy(cpy.__data);
+// 		return;
+// 	}
 
 
-	SparseMatrix& operator=(SparseMatrix&& mov) 
-	{
-		ifcrashmsg(__data != nullptr, "You shouldn't be moving Data to objects that are already initialized.");
-		__data = mov.__data;
-		return *this; 
-	}
+// 	SparseMatrix& operator=(SparseMatrix& cpy)  
+// 	{ 
+// 		if(likely(__data == nullptr)) 
+// 			allocate();
+
+// 		copy(cpy.__data);
+// 		return *this;
+// 	}
 
 
-	~SparseMatrix() { destroy(); return; }
+// 	SparseMatrix& operator=(SparseMatrix&& mov) 
+// 	{
+// 		ifcrashmsg(__data != nullptr, "You shouldn't be moving Data to objects that are already initialized.");
+// 		__data = mov.__data;
+// 		return *this; 
+// 	}
 
 
-	T operator()(u16 i, u16 j) 	    
-	{
-		// if(i > lastI )
-	}
-	const T operator()(u16 i, u16 j) const 
-	{
+// 	~SparseMatrix() { destroy(); return; }
 
-	}
+
+// 	T operator()(u16 i, u16 j) 	    
+// 	{
+// 		// if(i > lastI )
+// 	}
+// 	const T operator()(u16 i, u16 j) const 
+// 	{
+
+// 	}
 	
 	
-	void set(u16 i, u16 j)
-	{
+// 	void set(u16 i, u16 j)
+// 	{
 
-	}
-
-
-	T* data() const { return __data; }
+// 	}
 
 
-};
+// 	T* data() const { return __data; }
+
+
+// };
 
 
 

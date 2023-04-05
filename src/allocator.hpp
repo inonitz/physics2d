@@ -22,7 +22,7 @@ private:
 
 
 	bool   occupied(size_t idx) 		  { return freelist[idx].index < 0; 	   }
-	size_t index_from_pointer(T const* p) { return __scast(size_t, (buffer - p) ); }
+	size_t index_from_pointer(T const* p) { return __scast(size_t, (p - buffer) ); }
 
 	void common_init(size_t amountOfElements)
 	{
@@ -34,7 +34,7 @@ private:
 			freelist[i].index = i + 1;
 			freelist[i].next = &freelist[i + 1];
 		}
-		freelist[elemCount - 1] = { __scast(i64, elemCount), nullptr }; /* last element shouldn't pointer anywhere */
+		freelist[elemCount - 1] = { __scast(i64, elemCount), nullptr }; /* last element shouldn't point anywhere */
 		available = &freelist[0];
 		return;
 	}
@@ -42,7 +42,7 @@ private:
 public:
 	void create(size_t amountOfElements)
 	{
-		buffer   = __scast(T*,    _mm_malloc( sizeof(T)   * amountOfElements, sizeof(T)    ));
+		buffer   = __scast(T*,    _mm_malloc(sizeof(T)    * amountOfElements, sizeof(T)    ));
 		freelist = __scast(Node*, _mm_malloc(sizeof(Node) * amountOfElements, sizeof(Node) ));
 		common_init(amountOfElements);
 		return;
@@ -100,6 +100,20 @@ public:
 	}
 
 
+	void free(T* ptr)
+	{
+		size_t idx = index_from_pointer(ptr);
+		ifcrashdbg(!isaligned(ptr, sizeof(T)) || !occupied(idx) || (freeBlk == elemCount));
+		freelist[idx].index *= -1;
+		freelist[idx].next = available;
+		available = &freelist[idx];
+		++freeBlk;
+		
+		memset(ptr, DEFAULT8, sizeof(T)); /* completely wipe the block of old data */
+		return;
+	}
+
+
 	size_t allocate_index()
 	{
 		ifcrashdbg(!freeBlk);
@@ -125,20 +139,6 @@ public:
 	}
 
 
-	void free(T* ptr)
-	{
-		size_t idx = index_from_pointer(ptr);
-		ifcrashdbg(!isaligned(ptr, sizeof(T)) || !occupied(idx) || (freeBlk == elemCount));
-		freelist[idx].index *= -1;
-		freelist[idx].next = available;
-		available = &freelist[idx];
-		++freeBlk;
-		
-		memset(ptr, DEFAULT8, sizeof(T)); /* completely wipe the block of old data */
-		return;
-	}
-
-
 	size_t availableBlocks() const { return freeBlk;   }
 	size_t size()    	     const { return elemCount; }
 
@@ -147,7 +147,7 @@ public:
 	{
 		static const char* strs[2] = { "Occupied", "Free    " };
 		bool tmp = false;
-		printf("Static Pool Allocator:\nObject Array[%llu]: %p\n    Free:     %u\n    Occupied: %u\n    ", buffer, elemCount, freeBlk, elemCount - freeBlk);
+		printf("Static Pool Allocator:\nObject Array[%llu]: %p\n    Free:     %u\n    Occupied: %u\n    ", elemCount, buffer, freeBlk, elemCount - freeBlk);
 		for(size_t i = 0; i < elemCount; ++i)
 		{
 			tmp = boolean(freelist[i].index > 0);

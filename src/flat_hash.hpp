@@ -1,5 +1,7 @@
 #include "allocator.hpp"
 #include "hash.hpp"
+#include <algorithm>
+#include <utility>
 #include <vector>
 #include <functional>
 #include <string>
@@ -30,6 +32,7 @@ public:
 
 private:
 	using ValueManager = StaticPoolAllocator<Value, true>;
+	using ValKeyPair   = std::pair<Value*, Key>;
 	static constexpr f32 cm_growth_factor = 1.5f;
     static constexpr f32 cm_load_factor   = 0.70f;
 
@@ -45,6 +48,43 @@ private:
 	constexpr size_t minimumNodesFromBuckets(size_t buckets) {
 		return __scast(size_t, __scast(f32, buckets) * (1 / cm_load_factor) );
 	}
+
+
+
+	template<bool KeyValPairIterator = false> struct Iterator
+	{
+	private:
+		std::vector<ValKeyPair> const& m_pairs; /* [index, key] pairs */
+		u32 push;
+
+		using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+		using value_type 		= typename std::conditional<KeyValPairIterator, ValKeyPair, Value>::type;
+        using pointer           = value_type*;
+        using reference         = value_type&;
+
+
+	public:
+		Iterator(std::vector<ValKeyPair> const& to_iterate_on, u32 offset) : m_pairs(to_iterate_on), push{offset} {}
+
+
+ 		reference operator*() const {
+			if constexpr (KeyValPairIterator) { return m_pairs[push]; }
+			return *m_pairs[push].first;
+		}
+		pointer operator->() const {
+			if constexpr (KeyValPairIterator) { return &m_pairs[push]; }
+			return m_pairs[push].first;
+		}
+        Iterator& operator++() { ++push; return *this; }  
+        friend bool operator==(const Iterator& a, const Iterator& b) { return a.operator->() == b.operator->(); }
+        friend bool operator!=(const Iterator& a, const Iterator& b) { return a.operator->() != b.operator->(); }
+
+	};
+
+
+	using ValIterator    = Iterator<0>;
+	using KeyValIterator = Iterator<1>;
 
 
 
@@ -69,7 +109,7 @@ private:
 		} {}
 
 		__force_inline u8 first_available() const { return __builtin_ffs(~ctrl_t.bits) -1;  } /* get index to first available block.     */
-		__force_inline u8 first_occupied()  const { return __builtin_ffs(ctrl_t.bits) -1;   } /* make sure NOT to call when bits == 0 :) */
+		__force_inline u8 first_occupied()  const { return __builtin_ffs( ctrl_t.bits) -1;  } /* make sure NOT to call when bits == 0 :) */
 		__force_inline u8 length() 			const { return __builtin_popcount(ctrl_t.bits); }
 		bool full()  const { return ctrl_t.bits == 0b11111; }
 		bool empty() const { return ctrl_t.bits == 0b00000; }
@@ -193,6 +233,8 @@ private:
 	/* Value allocator & Value buffer (we only Own the pointer, we do not Manage it) */
 	ValueManager 		  m_vmng;
 	Value*                m_values;
+
+	std::vector<ValKeyPair> m_iterator;
 	
 	std::vector<KeyGroup> m_buckets;
 	u32 				  m_tableSize;
@@ -202,14 +244,14 @@ private:
 
 
 public:
-	void create(u32 buckets, u32 suggestedNodeAmount = 0)
+	void create(u32 buckets, u32 suggestedMaxNodeAmount = 0)
 	{
 		m_buckets.resize(buckets);
 		
-		suggestedNodeAmount += (suggestedNodeAmount == 0) * minimumNodesFromBuckets(buckets);
-		markfmt("created table with %u elements, %u buckets\n", suggestedNodeAmount, buckets);
-		m_values = __scast(Value*,   _mm_malloc(sizeof(Value) * suggestedNodeAmount, round2(sizeof(Value)))  );
-		m_vmng.create(m_values, suggestedNodeAmount);
+		suggestedMaxNodeAmount += (suggestedMaxNodeAmount == 0) * minimumNodesFromBuckets(buckets);
+		markfmt("created table with %u elements, %u buckets\n", suggestedMaxNodeAmount, buckets);
+		m_values = __scast(Value*,   _mm_malloc(sizeof(Value) * suggestedMaxNodeAmount, round2(sizeof(Value)))  );
+		m_vmng.create(m_values, suggestedMaxNodeAmount);
 
 		m_tableSize  = 0;
 		m_rehashed   = 0;
@@ -228,6 +270,7 @@ public:
 		m_rehashed   = 0;
 		m_collisions = 0;
 		m_buckets.clear();
+		m_iterator.clear();
 		m_vmng.destroy();
 		_mm_free(m_values);
 		return;
@@ -253,7 +296,19 @@ public:
 
 		if(likely(find == nullptr))
 		{
-			vidx = m_vmng.allocate_index(); /* get new value from alloc 			  */
+			vidx = m_vmng.allocate_index(); /* get new value from alloc */
+
+
+			ValKeyPair tmp = { &m_values[vidx], vidx };
+			auto it = std::upper_bound( /* Find insertion point in the vector */
+				m_iterator.begin(), 
+				m_iterator.end(), 
+				tmp, 
+				[](ValKeyPair const& a, ValKeyPair const& b) { return a.second < b.second; } 
+			);
+			m_iterator.insert(it, tmp);
+
+
 			m_buckets[idx].push(k, vidx); 	/* push into available position in bucket */
 			++m_tableSize; 					/* table increased in size.        		  */
 			m_collisions += m_buckets[idx].length() > 1; /* another collision occured if AFTER INSERTION there's atleast 2 elements. */
@@ -283,6 +338,7 @@ public:
 
 
 		m_vmng.free_index(vidx);
+		m_iterator.erase(std::find(m_iterator.begin(), m_iterator.end(), ValKeyPair{ &m_values[vidx], k })); /* Not so fast really, but good enough for now. */
 		--m_tableSize;
 		return DELETE_SUCCESS;
 	}
@@ -303,6 +359,24 @@ public:
 	size_t size()     const { return m_tableSize;      			   }
 	size_t max_size() const { return m_vmng.size();    			   }
 	Value* data()     const { return m_values;    	   			   }
+
+
+	KeyGroup* bucketBegin() const { return m_buckets.begin();      }
+	KeyGroup* bucketEnd()   const { return m_buckets.end();        }
+	ValIterator begin() const { return ValIterator(m_iterator, 0					); }
+	ValIterator end()   const { return ValIterator(m_iterator, m_iterator.size() - 1); }
+
+	decltype(m_iterator) const& asMapIterator() const { return m_iterator; }
+
+
+	void printIterator() const
+	{
+		printf("Iterator of %u Elements: { ", m_tableSize);
+		for(size_t i = 0; i < m_iterator.size(); ++i) {
+			printf("[%p, %llu], ", (void*)m_iterator[i].first, m_iterator[i].second);
+		}
+		printf("\b\b }\n\n\n\n");
+	}
 
 
 	void to_file(const_ref<StringFromKV> print, FILE* file=stdout)

@@ -8,5 +8,5 @@
 
 
 
-int testing_hashtables();
+int test_hashtables();
 

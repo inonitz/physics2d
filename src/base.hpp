@@ -244,6 +244,6 @@ template<typename T> constexpr T round2(T v) {
 
 __force_inline size_t readTimestampCounter() {
     u32 lo, hi;
-    __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi));
+    __asm__ volatile("rdtsc" : "=a" (lo), "=d" (hi));
     return ((size_t)hi << 32) | lo;
 }
