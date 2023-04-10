@@ -34,8 +34,8 @@ struct NumberGenerator
     }
 
 
-    int_result    randu()   { return uintdist(generator);   }
-    uint_result   randi()   { return intdist(generator);    }
+    uint_result   randu()   { return uintdist(generator);   }
+    int_result    randi()   { return intdist(generator);    }
     fdist_result  randf()   { return floatdist(generator);  }
     ddist_result  randd()   { return doubledist(generator); }
     uint64_result randu64() { return luintdist(generator);  }

@@ -83,24 +83,24 @@ static_assert(GET_ARG_COUNT(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 1
 \
 
 
-extern uint8_t run_once;
-#define RESET_RUN_ONCE_COUNT() run_once = 0;
+extern uint8_t __run_once;
+#define RESET_RUN_ONCE_COUNT() __run_once = 0;
 #define __once(code_block) \
-	if(!boolean(run_once)) { \
+	if(!boolean(__run_once)) { \
 		{ \
 			code_block; \
-			++run_once; \
+			++__run_once; \
 		} \
 	} \
 
 
-extern uint16_t finished;
-#define RESET_RUN_TIMES_COUNT() finished = 0;
+extern uint16_t __finished;
+#define RESET_RUN_TIMES_COUNT() __finished = 0;
 #define run_block(times, code_block) \
-	if(boolean((uint16_t)times - finished)) { \
+	if(boolean((uint16_t)times - __finished)) { \
 		{ \
 			code_block; \
-			++finished; \
+			++__finished; \
 		} \
 	} \
 
@@ -206,6 +206,31 @@ extern std::atomic<size_t> markflag;
 #define isaligned(ptr, alignment) boolean( (  reinterpret_cast<size_t>(ptr) & (static_cast<size_t>(alignment) - 1llu)  ) == 0 )
 #define __scast(type, val) static_cast<type>(val)
 #define __rcast(type, val) reinterpret_cast<type>(val)
+
+
+/*
+	if cond:
+		var *= false       => var = 0;
+		var += true * val  => var = val;
+	else:
+		var *= true 	   => var = var;
+		var += false * val => var += 0;
+*/
+#define CONDITIONAL_SET(var, val, cond) \
+	var *= !boolean(cond); \
+	var += boolean(cond) * (val); \
+	\
+
+
+extern std::uintptr_t __out;
+#define CONDITIONAL_SET_PTR(ptr, ptr_val, cond) \
+	__out = __rcast(std::uintptr_t, ptr); \
+	__out *= !boolean(cond); \
+	__out += boolean(cond) * __rcast(std::uintptr_t, ptr_val); \
+	ptr = __rcast(decltype(ptr), __out);
+	\
+
+
 
 
 typedef unsigned char byte;

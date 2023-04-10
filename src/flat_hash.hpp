@@ -9,10 +9,11 @@
 
 
 
-/* Hasher MUST overload the Following Functions: 
-	default Constructor
-	size_t operator(const_ref<Key>& k) [get hash Value       ] 
-	refresh() 						   [for changing the seed] 
+/* 
+	Hasher MUST overload the Following Functions: 
+		default Constructor
+		size_t operator(const_ref<Key>& k) [get hash Value       ] 
+		refresh() 						   [for changing the seed] 
 */
 template<typename Key, typename Value, class Hasher = Hash>
 struct flat_hash
@@ -21,14 +22,14 @@ public:
 	using StringFromKV = std::function<std::string(const_ref<Key>, const_ref<Value>)>;
 
 
-#define INSERT_SUCCESS 0
-#define INSERT_FAIL_TABLE_FULL 1
-#define INSERT_FAIL_BUCKET_FULL 2
+#define FLAT_HASH_INSERT_SUCCESS 0
+#define FLAT_HASH_INSERT_FAIL_TABLE_FULL 1
+#define FLAT_HASH_INSERT_FAIL_BUCKET_FULL 2
+#define FLAT_HASH_DELETE_SUCCESS 0
+#define FLAT_HASH_DELETE_FAIL_TABLE_EMPTY 1
+#define FLAT_HASH_DELETE_FAIL_BUCKET_EMPTY 2
+#define FLAT_HASH_DELETE_FAIL_KEY_NOT_FOUND 3
 
-#define DELETE_SUCCESS 0
-#define DELETE_FAIL_TABLE_EMPTY 1
-#define DELETE_FAIL_BUCKET_EMPTY 2
-#define DELETE_FAIL_KEY_NOT_FOUND 3
 
 private:
 	using ValueManager = StaticPoolAllocator<Value, true>;
@@ -235,7 +236,7 @@ private:
 	Value*                m_values;
 
 	std::vector<ValKeyPair> m_iterator;
-	
+
 	std::vector<KeyGroup> m_buckets;
 	u32 				  m_tableSize;
     u32                   m_collisions;
@@ -252,6 +253,8 @@ public:
 		markfmt("created table with %u elements, %u buckets\n", suggestedMaxNodeAmount, buckets);
 		m_values = __scast(Value*,   _mm_malloc(sizeof(Value) * suggestedMaxNodeAmount, round2(sizeof(Value)))  );
 		m_vmng.create(m_values, suggestedMaxNodeAmount);
+		
+		m_iterator.resize(suggestedMaxNodeAmount);
 
 		m_tableSize  = 0;
 		m_rehashed   = 0;
@@ -286,12 +289,12 @@ public:
 	u8 insert(const_ref<Key> k, const_ref<Value> v)
 	{
 		if(unlikely(m_vmng.size() == m_tableSize)) /* Hashtable needs resize */
-			return INSERT_FAIL_TABLE_FULL;
+			return FLAT_HASH_INSERT_FAIL_TABLE_FULL;
 
 		u32    idx  = hash(k) % m_buckets.size(), vidx = 0;
 		Value* find = bucket_lookup_ptr(idx, k);
 		if(unlikely(find == nullptr && m_buckets[idx].full())) 
-			return INSERT_FAIL_BUCKET_FULL; /* Hashtable needs resize */
+			return FLAT_HASH_INSERT_FAIL_BUCKET_FULL; /* Hashtable needs resize */
 
 
 		if(likely(find == nullptr))
@@ -299,6 +302,7 @@ public:
 			vidx = m_vmng.allocate_index(); /* get new value from alloc */
 
 
+			/* Update Key, Value Pair Vector for iterator */
 			ValKeyPair tmp = { &m_values[vidx], vidx };
 			auto it = std::upper_bound( /* Find insertion point in the vector */
 				m_iterator.begin(), 
@@ -320,27 +324,32 @@ public:
 		// if(current_load() > cm_load_factor) { /* hash table re-hashing will be the users' job */
 		// 	grow_buckets_rehash(__scast(size_t, __scast(f32, m_tableSize) * cm_growth_factor ));
 		// }
-		return INSERT_SUCCESS;
+		return FLAT_HASH_INSERT_SUCCESS;
 	}
 
 
 	u8 del(const_ref<Key> k)
 	{
-		if(unlikely(m_tableSize == 0)) return DELETE_FAIL_TABLE_EMPTY;
+		if(unlikely(m_tableSize == 0)) return FLAT_HASH_DELETE_FAIL_TABLE_EMPTY;
 		
 		u32 idx = hash(k) % m_buckets.size();
 		if(unlikely(m_buckets[idx].empty())) 
-			return DELETE_FAIL_BUCKET_EMPTY;
+			return FLAT_HASH_DELETE_FAIL_BUCKET_EMPTY;
 		
 		u32 vidx = bucket_del(idx, k);
 		if(unlikely(vidx == DEFAULT32))
-			return DELETE_FAIL_KEY_NOT_FOUND;
+			return FLAT_HASH_DELETE_FAIL_KEY_NOT_FOUND;
 
 
 		m_vmng.free_index(vidx);
-		m_iterator.erase(std::find(m_iterator.begin(), m_iterator.end(), ValKeyPair{ &m_values[vidx], k })); /* Not so fast really, but good enough for now. */
+		m_iterator.erase(
+			std::find( /* Not so fast really, but good enough for now. */
+				m_iterator.begin(), 
+				m_iterator.end(), 
+				ValKeyPair{ &m_values[vidx], k }
+		));
 		--m_tableSize;
-		return DELETE_SUCCESS;
+		return FLAT_HASH_DELETE_SUCCESS;
 	}
 
 
@@ -365,6 +374,7 @@ public:
 	KeyGroup* bucketEnd()   const { return m_buckets.end();        }
 	ValIterator begin() const { return ValIterator(m_iterator, 0					); }
 	ValIterator end()   const { return ValIterator(m_iterator, m_iterator.size() - 1); }
+
 
 	decltype(m_iterator) const& asMapIterator() const { return m_iterator; }
 
@@ -431,14 +441,14 @@ public:
 	{
 		static constexpr std::array<const char*, 11> statusCodes = {
 			"INSERT_SUCCESS           ",
-			"INSERT_FAIL_TABLE_FULL   ",
-			"INSERT_FAIL_BUCKET_FULL  ",
+			"FLAT_HASH_INSERT_FAIL_TABLE_FULL   ",
+			"FLAT_HASH_INSERT_FAIL_BUCKET_FULL  ",
 			"LOOKUP_SUCCESS           ", /* Returned ptr != nullptr */
 			"LOOKUP_FAIL_NOT_FOUND    ",
-			"DELETE_SUCCESS           ",
-			"DELETE_FAIL_TABLE_EMPTY  ",
-			"DELETE_FAIL_BUCKET_EMPTY ",
-			"DELETE_FAIL_KEY_NOT_FOUND",
+			"FLAT_HASH_DELETE_SUCCESS           ",
+			"FLAT_HASH_DELETE_FAIL_TABLE_EMPTY  ",
+			"FLAT_HASH_DELETE_FAIL_BUCKET_EMPTY ",
+			"FLAT_HASH_DELETE_FAIL_KEY_NOT_FOUND",
 			"REHASH_FAIL             ",
 			"REHASH_SUCCESS           "
 		};
@@ -447,11 +457,11 @@ public:
 	}
 
 
-	#undef INSERT_FAIL_BUCKET_FULL
-	#undef INSERT_FAIL_TABLE_FULL
+	#undef FLAT_HASH_INSERT_FAIL_BUCKET_FULL
+	#undef FLAT_HASH_INSERT_FAIL_TABLE_FULL
 	#undef INSERT_SUCCESS
-	#undef DELETE_FAIL_KEY_NOT_FOUND
-	#undef DELETE_FAIL_BUCKET_EMPTY
-	#undef DELETE_FAIL_TABLE_EMPTY
-	#undef DELETE_SUCCESS
+	#undef FLAT_HASH_DELETE_FAIL_KEY_NOT_FOUND
+	#undef FLAT_HASH_DELETE_FAIL_BUCKET_EMPTY
+	#undef FLAT_HASH_DELETE_FAIL_TABLE_EMPTY
+	#undef FLAT_HASH_DELETE_SUCCESS
 };

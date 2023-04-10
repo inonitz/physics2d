@@ -353,6 +353,28 @@ GENERATE_NEGATE_FUNC(4, u32, 4u)
 
 
 DEFINE_VECTOR_STRUCTURE_ARGS( \
+	4,
+	i32,
+	4i,
+	struct { i32 x;   i32 y;     i32 z;    i32 w;     }; 
+	struct { i32 r;   i32 g;     i32 b;    i32 a;     };
+	struct { i32 i;   i32 j;     i32 k;	   i32 l;     };
+	struct { i32 yaw; i32 pitch; i32 roll; i32 theta; };
+	struct { i32 m0;  i32 m1;    i32 m2;   i32 m3;    },
+	vec4i(i32 a, i32 b, i32 c, i32 d) 
+	{ 
+		x = a; 
+		y = b; 
+		z = c; 
+		w = d;
+		return; 
+	},
+	"vec4i %p: ( %d, %d, %d, %d )\n", (void*)begin(), x, y, z, w
+)
+GENERATE_NEGATE_FUNC(4, i32, 4i)
+
+
+DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	u32,
 	3u,
@@ -370,11 +392,50 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		z = c;
 		homogenised.w = 1.0f;
 		return; 
+	}
+	vec3u(i32 a, i32 b, i32 c)
+	{
+		x = __scast(u32, a);
+		y = __scast(u32, b);
+		z = __scast(u32, c);
+		return;
 	},
 	"vec3u %p: ( %u, %u, %u )\n", (void*)begin(), x, y, z
 )
 GENERATE_CROSSPROD_FUNC(3, u32, 3u)
 GENERATE_NEGATE_FUNC(3, u32, 3u)
+
+
+DEFINE_VECTOR_STRUCTURE_ARGS( \
+	3,
+	i32,
+	3i,
+	struct { i32 x;   i32 y;     i32 z;    };
+	struct { i32 u;   i32 v;     i32 w;    };
+	struct { i32 r;   i32 g;     i32 b;    };
+	struct { i32 i;   i32 j;     i32 k;    };
+	struct { i32 yaw; i32 pitch; i32 roll; };
+	struct { i32 m0;  i32 m1;    i32 m2;   };
+	vec4i homogenised,
+	vec3i(i32 a, i32 b, i32 c) 
+	{ 
+		x = a; 
+		y = b; 
+		z = c;
+		homogenised.w = 1.0f;
+		return; 
+	}
+	vec3i(vec3u const& uv)
+	{
+		x = __scast(i32, uv.x);
+		y = __scast(i32, uv.y);
+		z = __scast(i32, uv.z);
+		return;
+	},
+	"vec3i %p: ( %d, %d, %d )\n", (void*)begin(), x, y, z
+)
+GENERATE_CROSSPROD_FUNC(3, i32, 3i)
+GENERATE_NEGATE_FUNC(3, i32, 3i)
 
 
 

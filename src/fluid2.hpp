@@ -21,15 +21,45 @@ using Pressure = f32;
 using Velocity = f32;
 
 
-struct GridCell {
-	Vec3 	 pos; /* needs to have integer indices :/ */
-	Vec3 	 vel;
-	Vec3 	 tmp;
-	Pressure p;
-	u8 layer;
-	u8 type; /* Air, Fluid, Solid. */
-};
+#define LERP(val_x, val_y, __t) (val_y * __t + (1.0f - __t) * val_x) \
 
+
+#define BILERP(val_x, val_y, val_z, val_w, __t0, __t1) \
+	LERP( \
+		LERP(val_x, val_y, __t0), \
+		LERP(val_z, val_w, __t0), \
+		__t1 \
+	) \
+
+
+#define TRILERP(coef1to4, coef5to8, vec3) \
+	LERP( \
+		BILERP(coef1to4.m0, coef1to4.m1, coef1to4.m2, coef1to4.m3, vec.x, vec3.y), \
+		BILERP(coef5to8.m0, coef5to8.m1, coef5to8.m2, coef5to8.m3, vec.x, vec3.y), \
+		vec3.z \
+	); \
+
+
+inline f32 BiLerp(math::vec4f const& coef, math::vec2f const& vec)
+{
+	// math::vec2f tmp = {
+	// 	LERP(coef.m0, coef.m1, vec.x),
+	// 	LERP(coef.m2, coef.m3, vec.x)
+	// };
+	// return LERP(tmp.x, tmp.y, vec.y);
+	return BILERP(coef.m0, coef.m1, coef.m2, coef.m3, vec.x, vec.y);
+}
+
+
+
+inline f32 TriLerp(math::vec4f const& coef0, math::vec4f const& coef1, math::vec3f const& vec)
+{
+	return LERP(
+		BILERP(coef0.m0, coef0.m1, coef0.m2, coef0.m3, vec.x, vec.y),
+		BILERP(coef1.m0, coef1.m1, coef1.m2, coef1.m3, vec.x, vec.y),
+		vec.z
+	);
+}
 
 
 
@@ -186,7 +216,7 @@ template<u16 N> bool PreconditionedConjugateGradient(Matrixf<N> A, Matrixf<N> Mi
 		residue  -= alpha * Ap;            /* r_k+1 */
 
 		--max_iter;
-	} while(residue.mag() > tolerance && max_iter);
+	} while(max_iter && residue.mag() > tolerance);
 
 
 	return max_iter == 0; /* Success if not reached 0. */
