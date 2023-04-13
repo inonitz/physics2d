@@ -35,9 +35,11 @@ struct Marker {
 };
 
 
+
+
 struct Simulation2D
 {
-	math::vec3u bounds;
+	const math::vec3u bounds{500u, 500u, 500u};
 	f32 dx;
 	f32 k_cfl;
 	f32 uMax;
@@ -204,7 +206,7 @@ private: /* Update Grid Begin */
 				Effectively, this works out to:
 				for every neighbour n of C: 
 					if n == nullptr:
-						n->type = AIR;
+						n->type = AIR; { i.e default }
 						IF OutOfSimulationBounds(n): n->type = SOLID
 						insert n to table
 					else
@@ -280,22 +282,6 @@ private: /* Update Grid Begin */
 	}
 
 
-	void velocity(math::vec3f& out, GridPosition const& pos)
-	{
-		const std::array<u32, 6> NeighbourIndices = {
-			toIndexKey(pos), toIndexKey({ pos.x + 1, pos.y, pos.z }),
-			toIndexKey(), toIndexKey(),
-			toIndexKey()
-		}
-		std::array<Cell*, 6> NeighbourLookups = {
-			cells.lookup(toIndexKey(GridPosition{ pos.x, pos.y, pos.z })),
-
-		};
-	}
-
-
-
-
 	void updateGrid()
 	{
 		resetCells();
@@ -306,7 +292,116 @@ private: /* Update Grid Begin */
 	}
 
 
-public:  /* Update Grid End   */
+private:  /* Update Grid End   */
+
+
+	void extractNeighbours(math::vec3u const& pos, std::array<math::vec3f, 8>& extracted)
+	{
+		const std::array<u32, 8> nbrKey = {
+			toIndexKey({0, 0, 0}), toIndexKey({0, 0, 1}), toIndexKey({0, 1, 0}), toIndexKey({0, 1, 1}),
+			toIndexKey({1, 0, 0}), toIndexKey({1, 0, 1}), toIndexKey({1, 1, 0}), toIndexKey({1, 1, 1}) 
+		};
+		u32 indexKey = toIndexKey(pos);
+		static Cell defaultCell{}; /* this will have to do for now as I don't know how to treat boundaries properly YET. */
+
+		static alignsz(32) std::array<Cell*, 8> VelPtrs = {
+			cells.lookup(indexKey + nbrKey[0]), cells.lookup(indexKey + nbrKey[1]), cells.lookup(indexKey + nbrKey[2]), cells.lookup(indexKey + nbrKey[3]),
+			cells.lookup(indexKey + nbrKey[4]), cells.lookup(indexKey + nbrKey[5]), cells.lookup(indexKey + nbrKey[6]), cells.lookup(indexKey + nbrKey[7]),
+		};
+
+
+		// static alignsz(32) std::array<Cell*, 8> defPtrs{ &defaultCell };
+		// __m256i velptrVec = _mm256_set1_epi32(indexKey);
+		// __m256i nbrkeyVec = _mm256_load_epi32(nbrKey.begin());
+		// velptrVec = _mm256_add_epi32(velptrVec, nbrkeyVec);
+		// _mm256_maskstore_ps((f32*)defPtrs.begin(), *(__m256i*)VelPtrs.begin(), VelPtrs);
+
+
+		VelPtrs[0] = (VelPtrs[0] == nullptr) ? &defaultCell : VelPtrs[0];
+		VelPtrs[1] = (VelPtrs[1] == nullptr) ? &defaultCell : VelPtrs[1];
+		VelPtrs[2] = (VelPtrs[2] == nullptr) ? &defaultCell : VelPtrs[2];
+		VelPtrs[3] = (VelPtrs[3] == nullptr) ? &defaultCell : VelPtrs[3];
+		VelPtrs[4] = (VelPtrs[4] == nullptr) ? &defaultCell : VelPtrs[4];
+		VelPtrs[5] = (VelPtrs[5] == nullptr) ? &defaultCell : VelPtrs[5];
+		VelPtrs[6] = (VelPtrs[6] == nullptr) ? &defaultCell : VelPtrs[6];
+		VelPtrs[7] = (VelPtrs[7] == nullptr) ? &defaultCell : VelPtrs[7];
+
+		for(size_t i = 0; i < 8; ++i) {
+			extracted[i] = VelPtrs[i]->u_p.xmm;
+		}
+		return;
+	}
+
+
+	void lerpedValue(math::vec3f const& pos)
+	{
+
+	}
+	
+
+	// void velocityAt(math::vec3f const& pos, math::vec3f& out)
+	// {
+	// 	alignsz(64) std::array<math::vec3f, 8> Velocities;
+	// 	alignsz(32) std::array<f32, 8> 		   VelocityI[3];
+	// 	math::vec3u gridPos[3];
+	// 	math::vec3f lerpWeights[3];
+
+
+	// 	lerpWeights[0] = _mm_floor_ps(pos.xmm);
+	// 	gridPos[0] 	= cvtu32(lerpWeights);
+
+	// 	extractNeighbours(gridPos, Velocities);
+	// 	for(size_t i = 0; i < 8; ++i) { VelocityI[0][i] = Velocities[i].x; }
+	// 	for(size_t i = 0; i < 8; ++i) { VelocityI[1][i] = Velocities[i].y; }
+	// 	for(size_t i = 0; i < 8; ++i) { VelocityI[2][i] = Velocities[i].z; }
+
+	// 	lerpWeights = pos - lerpWeights;
+	// 	out.x = TriLerpSimd(VelocityI[0], lerpWeights);
+	// 	out.y = TriLerpSimd(VelocityI[1], lerpWeights);
+	// 	out.z = TriLerpSimd(VelocityI[2], lerpWeights);
+	// 	return;
+	// }
+
+	f32 TriLerpCellVelocities(Vec3 const& pos)
+	{
+		return 1.0f;
+	}
+
+
+	void velocityAt(Vec3 const& pos, Vec3& out)
+	{
+		Vec3 normpos   = pos * (1.0f / dx);
+		Vec3 normposmh = normpos - Vec3{0.5f};
+		Vec3 blend[3];
+
+		blend[0] = _mm_blend_ps(normpos.xmm, normposmh.xmm, 0b0110);
+		blend[1] = _mm_blend_ps(normpos.xmm, normposmh.xmm, 0b1010);
+		blend[2] = _mm_blend_ps(normpos.xmm, normposmh.xmm, 0b1100);
+		out = {
+			TriLerpCellVelocities(blend[0]),
+			TriLerpCellVelocities(blend[1]),
+			TriLerpCellVelocities(blend[2])
+		};
+		return;
+	}
+
+
+	void advect(GridPosition const& pos)
+	{
+		Vec3 v, posf0 = cvtf32(pos), posf1 = posf0, t{ dt * 0.5f };
+		
+		velocityAt(posf0, v);
+		posf0 += dt * v;
+		velocityAt(posf0, v);
+		
+		t *= 2.0f;
+		posf1 += t * v; 
+		return;
+	}
+
+
+
+public:
 
 
 	void update()

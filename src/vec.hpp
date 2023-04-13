@@ -1,5 +1,6 @@
 #pragma once
 #include "../base.hpp"
+#include <immintrin.h>
 #include <math.h>
 #include <array>
 
@@ -35,8 +36,8 @@ public:
 	void zero() { memset(__data, 0x00, bytes()); return; }
 
 
-	Vector() { zero(); }
-	Vector(const_ref<T> defaultVal) 
+	constexpr Vector() { zero(); }
+	constexpr Vector(const_ref<T> defaultVal) 
 	{
 		for(size_t i = 0; i < length; i += 2)  {
 			__data[i    ] = defaultVal;
@@ -184,7 +185,7 @@ struct vec##aptn \
     } \
     vec##aptn(std::array<dtype, len> const& arr) : vec##aptn(arr.begin()) {} \
     vec##aptn(Vector<dtype, len>     const& vec) : mem(vec)               {} \
-	vec##aptn(vec##aptn 			 const& cpy) : mem(cpy.mem) 		  {} \
+	vec##aptn(vec##aptn 			   const& cpy) : mem(cpy.mem) 		  {} \
     vec##aptn& operator=(const vec##aptn& cpy) { \
         memcpy(begin(), cpy.begin(), bytes()); \
         return *this; \
@@ -266,6 +267,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	4,
 	float,
 	4f,
+	__m128 xmm;
 	struct { float x;   float y;     float z;    float w;     }; 
 	struct { float r;   float g;     float b;    float a;     };
 	struct { float i;   float j;     float k;    float l;     };
@@ -278,7 +280,8 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		z = c; 
 		w = d;
 		return; 
-	},
+	}
+	vec4f(__m128 mm) : xmm(mm) {},
 	"vec4f %p: ( %.05f, %.05f, %.05f, %.05f )\n", (void*)begin(), x, y, z, w
 )
 GENERATE_NEGATE_FUNC(4, float, 4f)
@@ -288,6 +291,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	float,
 	3f,
+	__m128 xmm;
 	struct { float x;   float y;     float z;    };
 	struct { float u;   float v;     float w;    };
 	struct { float r;   float g;     float b;    };
@@ -302,7 +306,8 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		z = c;
 		homogenised.w = 1.0f;
 		return; 
-	},
+	}
+	vec3f(__m128 mm) : xmm(mm) {},
 	"vec3f %p: ( %.05f, %.05f, %.05f )\n", (void*)begin(), x, y, z
 )
 GENERATE_CROSSPROD_FUNC(3, float, 3f)
@@ -313,7 +318,8 @@ GENERATE_NEGATE_FUNC(3, float, 3f)
 DEFINE_VECTOR_STRUCTURE_ARGS( \
 	2,
 	u32, 
-	2u, 
+	2u,
+	u64 qword;
 	struct { u32 x;   u32 y;     };
 	struct { u32 u;   u32 v;     };
 	struct { u32 i;   u32 j;     };
@@ -334,6 +340,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	4,
 	u32,
 	4u,
+	__m128i_u xmm;
 	struct { u32 x;   u32 y;     u32 z;    u32 w;     }; 
 	struct { u32 r;   u32 g;     u32 b;    u32 a;     };
 	struct { u32 i;   u32 j;     u32 k;	   u32 l;     };
@@ -346,7 +353,8 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		z = c; 
 		w = d;
 		return; 
-	},
+	}
+	vec4u(__m128i mm) : xmm(mm) {}, 
 	"vec4u %p: ( %u, %u, %u, %u )\n", (void*)begin(), x, y, z, w
 )
 GENERATE_NEGATE_FUNC(4, u32, 4u)
@@ -356,6 +364,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	4,
 	i32,
 	4i,
+	__m128i xmm;
 	struct { i32 x;   i32 y;     i32 z;    i32 w;     }; 
 	struct { i32 r;   i32 g;     i32 b;    i32 a;     };
 	struct { i32 i;   i32 j;     i32 k;	   i32 l;     };
@@ -368,7 +377,8 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		z = c; 
 		w = d;
 		return; 
-	},
+	}
+	vec4i(__m128i mm) : xmm(mm) {},
 	"vec4i %p: ( %d, %d, %d, %d )\n", (void*)begin(), x, y, z, w
 )
 GENERATE_NEGATE_FUNC(4, i32, 4i)
@@ -378,6 +388,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	u32,
 	3u,
+	__m128i_u xmm;
 	struct { u32 x;   u32 y;     u32 z;    };
 	struct { u32 u;   u32 v;     u32 w;    };
 	struct { u32 r;   u32 g;     u32 b;    };
@@ -386,7 +397,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	struct { u32 m0;  u32 m1;    u32 m2;   };
 	vec4u homogenised,
 	vec3u(u32 a, u32 b, u32 c) 
-	{ 
+	{
 		x = a; 
 		y = b; 
 		z = c;
@@ -399,7 +410,9 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		y = __scast(u32, b);
 		z = __scast(u32, c);
 		return;
-	},
+	}
+	vec3u(__m128i mm)   : xmm(mm) {},
+
 	"vec3u %p: ( %u, %u, %u )\n", (void*)begin(), x, y, z
 )
 GENERATE_CROSSPROD_FUNC(3, u32, 3u)
@@ -410,6 +423,7 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 	3,
 	i32,
 	3i,
+	__m128i xmm;
 	struct { i32 x;   i32 y;     i32 z;    };
 	struct { i32 u;   i32 v;     i32 w;    };
 	struct { i32 r;   i32 g;     i32 b;    };
@@ -431,7 +445,8 @@ DEFINE_VECTOR_STRUCTURE_ARGS( \
 		y = __scast(i32, uv.y);
 		z = __scast(i32, uv.z);
 		return;
-	},
+	}
+	vec3i(__m128i mm) : xmm(mm) {},
 	"vec3i %p: ( %d, %d, %d )\n", (void*)begin(), x, y, z
 )
 GENERATE_CROSSPROD_FUNC(3, i32, 3i)

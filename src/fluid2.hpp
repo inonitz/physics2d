@@ -21,6 +21,17 @@ using Pressure = f32;
 using Velocity = f32;
 
 
+inline math::vec3u cvtu32(math::vec3f const& A) { return _mm_cvttps_epi32(A.xmm); }
+inline math::vec3i cvti32(math::vec3f const& A) { return _mm_cvttps_epi32(A.xmm); }
+inline math::vec4u cvtu32(math::vec4f const& A) { return _mm_cvttps_epi32(A.xmm); }
+inline math::vec4i cvti32(math::vec4f const& A) { return _mm_cvttps_epi32(A.xmm); }
+
+inline math::vec3f cvtf32(math::vec3u const& A) { return _mm_cvtepi32_ps(A.xmm); }
+inline math::vec3f cvtf32(math::vec3i const& A) { return _mm_cvtepi32_ps(A.xmm); }
+inline math::vec4f cvtf32(math::vec4u const& A) { return _mm_cvtepi32_ps(A.xmm); }
+inline math::vec4f cvtf32(math::vec4i const& A) { return _mm_cvtepi32_ps(A.xmm); }
+
+
 #define LERP(val_x, val_y, __t) (val_y * __t + (1.0f - __t) * val_x) \
 
 
@@ -32,33 +43,110 @@ using Velocity = f32;
 	) \
 
 
-#define TRILERP(coef1to4, coef5to8, vec3) \
-	LERP( \
-		BILERP(coef1to4.m0, coef1to4.m1, coef1to4.m2, coef1to4.m3, vec.x, vec3.y), \
-		BILERP(coef5to8.m0, coef5to8.m1, coef5to8.m2, coef5to8.m3, vec.x, vec3.y), \
-		vec3.z \
-	); \
+/*
+	Same As Naive Version Except Change of Arg Order in C:
+	C = {
+		C_000, C_001, C_010, C_011,
+		C_100, C_101, C_110, C_111 
+	} (I transposed it)
+	More specifically, the order is changed such that the columns can be multiplied straight away by their respective constant,
+	instead of needlessly shuffling:
+	Old  => New
+	C[0] => C[0],
+	C[2] => C[1],
+	C[4] => C[2],
+	C[6] => C[3],
 
-
-inline f32 BiLerp(math::vec4f const& coef, math::vec2f const& vec)
+	C[1] => C[4],
+	C[3] => C[5]
+	C[5] => C[6]
+	C[7] => C[7]	
+*/
+inline f32 TriLerpSimd(alignsz(16) std::array<f32, 8> const& C, math::vec3f const& ti)
 {
-	// math::vec2f tmp = {
-	// 	LERP(coef.m0, coef.m1, vec.x),
-	// 	LERP(coef.m2, coef.m3, vec.x)
-	// };
-	// return LERP(tmp.x, tmp.y, vec.y);
-	return BILERP(coef.m0, coef.m1, coef.m2, coef.m3, vec.x, vec.y);
+    __m128 Ct, Comt, _t, _omt, A0, A1, B, t, omti;
+	union M128
+	{
+		__m128 v;
+		struct alignpk(16) {
+			float x, y, z, w;
+		};
+	};
+
+
+    t    = _mm_load_ps(ti.begin());              /* t = ti           */
+    omti = _mm_sub_ps(_mm_set_ps1(1.0f), t); /* omti = 1.0f - ti */
+    _omt = _mm_shuffle_ps(omti, omti, 0); /* omt = { 1.0f - ti[0] }*/
+    _t   = _mm_shuffle_ps(t, t, 0);       /* _t  = { ti[0] }       */
+
+
+    Comt = _mm_load_ps(&C[0]); /* Comt = C[0 -> 3] */
+    Ct   = _mm_load_ps(&C[4]); /* Ct   = C[4 -> 7] */
+    A0 = _mm_mul_ps(Ct, _t);     /* A0 = C[0 -> 3] * (1.0f - ti[0])        */
+    A1 = _mm_mul_ps(Comt, _omt); /* A1 = C[4 -> 7] * ti[0]                 */
+    B  = _mm_add_ps(A0, A1);     /* B  = lerp(C[0 -> 3], C[4 -> 7], ti[0]) */
+
+
+    _omt = _mm_shuffle_ps(omti, omti, 0b11); /* _omt = { 1.0f - ti[2] } */
+    _t   = _mm_shuffle_ps(t, t, 0b11);       /* _t   = { ti[2] }        */
+    
+    _t = _mm_shuffle_ps(_t, _omt, 0); /* _t = { ti[2], ti[2], 1.0f - ti[2], 1.0f - ti[2] }*/
+    B = _mm_shuffle_ps(B, B, 0b00 | (0b10 << 2) | (0b01 << 4) | (0b11 << 6)); /* Convert to B[0], B[2], B[1], B[3] */
+    
+	B = _mm_mul_ps(B, _t);
+    /* bsB = before_shuffle_B 
+        B = {
+            bsB.x * ti[2],
+            bsB.z * ti[2],
+            bsB.y * (1.0f - ti[2]),
+            bsB.w * (1.0f - ti[2]),
+        }
+    */
+    B = _mm_shuffle_ps(B, B, 0b00 | (0b10 << 2) | (0b01 << 4) | (0b11 << 6)); /* Convert back to B[0], B[1], B[2], B[3] */
+    B = _mm_hadd_ps(B, B);
+    /*
+        B = {
+            lerp(bsB.x, bsB.y, ti[2]),
+            lerp(bsB.z, bsB.w, ti[2]),
+            ...,
+        }
+    */
+
+    M128 cvt{B};
+    return cvt.x * (1.0f - ti[1]) + cvt.y * ti[1];
 }
 
 
 
-inline f32 TriLerp(math::vec4f const& coef0, math::vec4f const& coef1, math::vec3f const& vec)
+
+/*
+	In a Coordinate system where 
+	X+ = Right,
+	Y+ = Up,
+	Z+ = Towards Viewer,
+	The Order of Args in C = 
+	{ 
+		C_000, C_100,  
+		C_001, C_101,  
+		C_010, C_110,  
+		C_011, C_111  
+	}
+	First we interpolate over the X axis, then Z then Y.
+
+*/
+inline f32 TriLerpNaive(alignsz(16) std::array<f32, 8> const& C, math::vec3f const& t)
 {
-	return LERP(
-		BILERP(coef0.m0, coef0.m1, coef0.m2, coef0.m3, vec.x, vec.y),
-		BILERP(coef1.m0, coef1.m1, coef1.m2, coef1.m3, vec.x, vec.y),
-		vec.z
-	);
+	math::vec4f C2 = {
+		LERP(C[0], C[1], t.x),
+		LERP(C[2], C[3], t.x),
+		LERP(C[4], C[5], t.x),
+		LERP(C[6], C[7], t.x)
+	};
+	math::vec2f C1 = {
+		LERP(C2[0], C2[1], t.z),
+		LERP(C2[2], C2[3], t.z),
+	};
+	return LERP(C1[0], C1[1], t.y);
 }
 
 
