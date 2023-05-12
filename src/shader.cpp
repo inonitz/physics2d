@@ -154,6 +154,161 @@ void Program::fromBuffers(std::vector<loadedShader> const& buffers)
 }
 
 
+void Program::fromFilesCompute(std::vector<ShaderData> const& shaderInfo, math::vec3u const& localWorkgroupSize)
+{
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+
+
+    std::array<u32, 3> numberToStringSize = {
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.x + (localWorkgroupSize.x != 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.y + (localWorkgroupSize.y != 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.z + (localWorkgroupSize.z != 1u)) )  ) 
+    };
+    std::array<char*, 3> numberToString = {
+        __rcast(char*, malloc(  1 + numberToStringSize[0]  )),
+        __rcast(char*, malloc(  1 + numberToStringSize[1]  )),
+        __rcast(char*, malloc(  1 + numberToStringSize[2]  )),
+    };
+    sprintf(numberToString[0], "%u", localWorkgroupSize.x);
+    sprintf(numberToString[1], "%u", localWorkgroupSize.y);
+    sprintf(numberToString[2], "%u", localWorkgroupSize.z);
+
+
+    constexpr std::array<char[19], 3> substrings = {
+            "local_size_x = ",
+            "local_size_y = ",
+            "local_size_z = "
+    };
+    std::array<char*, 3> positions = { nullptr, nullptr, nullptr };
+
+
+
+
+    shaders = shaderInfo;
+    sources.resize(shaders.size());
+    for(; i < shaders.size() && successStatus; ++i) /* this is going to be 1 anyway :/, maybe i should treat compute shaders a little differently. */
+    {
+        buf.size = 0;
+        buf.data = nullptr;
+
+
+        /* we use the text obtained from the shader source for reloading the shader-program on the fly  */
+        loadFile(shaders[i].filepath, &buf.size, nullptr );
+        sources[i].resize(buf.size);
+        loadFile(shaders[i].filepath, &buf.size, sources[i].data());
+        
+
+        positions[0] = strstr(sources[i].data(), substrings[0]) + 14;
+        positions[1] = strstr(sources[i].data(), substrings[1]) + 14;
+        positions[2] = strstr(sources[i].data(), substrings[2]) + 14;
+        memcpy(positions[0], "   ", 3);
+        memcpy(positions[1], "   ", 3);
+        memcpy(positions[2], "   ", 3);
+        memcpy(positions[0], numberToString[0], numberToStringSize[0]);
+        memcpy(positions[1], numberToString[1], numberToStringSize[1]);
+        memcpy(positions[2], numberToString[2], numberToStringSize[2]);
+        debug_messagefmt("--------------------------------\nModified Shader File:\n%s\n--------------------------------\n", sources[i].data());
+
+
+        buf.data = sources[i].data();
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+    createProgram();
+    return;
+}
+
+
+void Program::reloadCompute(math::vec3u const& localWorkgroupSize) 
+{
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+
+
+    std::array<u32, 3> numberToStringSize = {
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.x + (localWorkgroupSize.x != 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.y + (localWorkgroupSize.y != 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(localWorkgroupSize.z + (localWorkgroupSize.z != 1u)) )  ) 
+    };
+    std::array<char*, 3> numberToString = {
+        __rcast(char*, malloc(  1 + numberToStringSize[0]  )),
+        __rcast(char*, malloc(  1 + numberToStringSize[1]  )),
+        __rcast(char*, malloc(  1 + numberToStringSize[2]  )),
+    };
+    sprintf(numberToString[0], "%u", localWorkgroupSize.x);
+    sprintf(numberToString[1], "%u", localWorkgroupSize.y);
+    sprintf(numberToString[2], "%u", localWorkgroupSize.z);
+
+
+    constexpr std::array<char[19], 3> substrings = {
+            "local_size_x = ",
+            "local_size_y = ",
+            "local_size_z = "
+    };
+    std::array<char*, 3> positions = { nullptr, nullptr, nullptr };
+
+
+    for(; i < shaders.size() && successStatus; ++i) /* this is going to be 1 anyway :/, maybe i should treat compute shaders a little differently. */
+    {
+        buf.size = 0;
+        buf.data = nullptr;
+
+
+        /* we use the text obtained from the shader source for reloading the shader-program on the fly  */
+        loadFile(shaders[i].filepath, &buf.size, nullptr );
+        sources[i].resize(buf.size);
+        loadFile(shaders[i].filepath, &buf.size, sources[i].data());
+        
+
+        positions[0] = strstr(sources[i].data(), substrings[0]) + 14;
+        positions[1] = strstr(sources[i].data(), substrings[1]) + 14;
+        positions[2] = strstr(sources[i].data(), substrings[2]) + 14;
+        memcpy(positions[0], "   ", 3);
+        memcpy(positions[1], "   ", 3);
+        memcpy(positions[2], "   ", 3);
+        memcpy(positions[0], numberToString[0], numberToStringSize[0]);
+        memcpy(positions[1], numberToString[1], numberToStringSize[1]);
+        memcpy(positions[2], numberToString[2], numberToStringSize[2]);
+        debug_messagefmt("--------------------------------\nModified Shader File:\n%s\n--------------------------------\n", sources[i].data());
+
+
+        buf.data = sources[i].data();
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    free(numberToString[0]);
+    free(numberToString[1]);
+    free(numberToString[2]);
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+    createProgram();
+    return;    
+}
+
+
 
 #define CREATE_UNIFORM_FUNCTION_IMPL(TypeSpecifier, arg0, ...) \
 [[maybe_unused]] void Program::uniform##TypeSpecifier( \

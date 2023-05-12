@@ -33,7 +33,7 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 	glfwMakeContextCurrent(handle);
 	glfwSwapInterval(0); // Disable vsync
 	
-	wh = { width, height };
+	dims = { width, height };
 	glfwSetFramebufferSizeCallback(handle, glfwOverride.windowSizeEvent);
 	glfwSetKeyCallback(handle, glfwOverride.keyEvent);
 	glfwSetCursorPosCallback(handle, glfwOverride.mousePosEvent);
@@ -49,7 +49,7 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 		glfwDestroyWindow(handle);
 		glfwTerminate();
 	});
-    
+
 
 	IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -59,6 +59,7 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(handle, true);
 	ifcrash(!ImGui_ImplOpenGL3_Init("#version 460"));
+	
 	
 	return;
 }
@@ -107,12 +108,14 @@ void window::procUpcomingEvents()
 }
 
 
-void window::procOngoingEvents() const 
+void window::procOngoingEvents() 
 {
 	/* end frame */
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+	windowMinimized  = false;
+	windowSizeChange = false;
 	update_mouse_callback_states();
 	update_key_callback_states();
 	glfwPollEvents();

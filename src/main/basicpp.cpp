@@ -59,12 +59,6 @@ void renderImGui(globalContext* const ctx, math::mat4f const& modelMatrix)
 }
 
 
-template<u8 type> struct GridCell {
-	f32 p;
-	f32 v;
-	math::vec2f ux;
-	math::vec2f uy;
-};
 
 
 int basicpp()

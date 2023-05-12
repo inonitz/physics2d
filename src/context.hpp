@@ -39,6 +39,30 @@ struct Vertex {
 };
 
 
+struct Sphere
+{
+	math::vec4f center_radius; /* { Center(x, y, z), radius }*/
+};
+
+
+struct CameraTransform
+{
+	math::vec3f position;
+	math::vec2f viewport;
+	f32     focal_length;
+	u8      reserved[4];
+};
+
+
+struct alignsz(8) SceneData
+{
+	CameraTransform transform;
+	u32 	        max_length;
+	u32 			curr_length;
+	Sphere 			objects[1];
+};
+
+
 struct globalContext {
 	window 			 glfw;
 	Camera 			 cam;

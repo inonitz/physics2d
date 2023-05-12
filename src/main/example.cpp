@@ -1,6 +1,6 @@
-#include<iostream>
-#include<glad/glad.h>
-#include<GLFW/glfw3.h>
+#include <iostream>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 
 
@@ -121,7 +121,7 @@ int example()
 	glVertexArrayVertexBuffer(VAO, 0, VBO, 0, 5 * sizeof(GLfloat));
 	glVertexArrayElementBuffer(VAO, EBO);
 
-
+	
 	GLuint screenTex;
 	glCreateTextures(GL_TEXTURE_2D, 1, &screenTex);
 	glTextureParameteri(screenTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

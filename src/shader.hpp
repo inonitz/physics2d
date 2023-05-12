@@ -90,6 +90,12 @@ public:
 		return;
 	}
 
+	void fromFilesCompute(
+		std::vector<ShaderData> const& shaderInfo, 
+		math::vec3u 			const& localWorkgroupSize = { 32, 48, 1 }
+	);
+	void reloadCompute(math::vec3u const& localWorkgroupSize = { 32, 48, 1 });
+
 
 #define CREATE_UNIFORM_FUNCTION_DEFINITON(TypeSpecifier, arg0) [[maybe_unused]] void uniform##TypeSpecifier(std::string_view const& name, arg0);
 	CREATE_UNIFORM_FUNCTION_DEFINITON(1f,  f32 v)
