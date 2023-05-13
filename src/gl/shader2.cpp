@@ -1,0 +1,268 @@
+#include <glad/glad.h>
+#include "shader2.hpp"
+#include "util/file.hpp"
+
+
+
+
+static inline std::array<char, 2048> genericErrorLogBuffer;
+
+
+constexpr const char* shaderTypeToString(u32 type)
+{
+    constexpr std::array<u32,         3> types = {  GL_VERTEX_SHADER,   GL_FRAGMENT_SHADER,   GL_COMPUTE_SHADER  };
+    constexpr std::array<const char*, 4> strs  = { "GL_VERTEX_SHADER", "GL_FRAGMENT_SHADER", "GL_COMPUTE_SHADER", "GL_SHADER_UNKOWN" };
+    size_t i = 0;
+    while(i < 3 && types[i] != type) ++i;
+    return strs[i];
+}
+
+
+void writeComputeGroupSizeToShader(char* source, math::vec3u const& size)
+{
+    constexpr std::array<char[19], 3> substrings = {
+            "local_size_x = ",
+            "local_size_y = ",
+            "local_size_z = "
+    };
+    
+
+    const std::array<u32, 3> numberToStringSize = {
+        __scast(u32, std::ceil( std::log10(size.x + (size.x == 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(size.y + (size.y == 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(size.z + (size.z == 1u)) )  ) 
+    };
+    std::array<char[5], 3> numberToString = {
+        "    ",
+        "    ",
+        "    "
+    };
+    std::array<char*, 3> positions = { nullptr, nullptr, nullptr };
+    
+    
+    sprintf(numberToString[0], "%u", size.x);
+    sprintf(numberToString[1], "%u", size.y);
+    sprintf(numberToString[2], "%u", size.z);
+    positions[0] = strstr(source, substrings[0]) + 15;
+    positions[1] = strstr(source, substrings[1]) + 15;
+    positions[2] = strstr(source, substrings[2]) + 15;
+    memcpy(positions[0], "   ", 3);
+    memcpy(positions[1], "   ", 3);
+    memcpy(positions[2], "   ", 3);
+    memcpy(positions[0], numberToString[0], numberToStringSize[0]);
+    memcpy(positions[1], numberToString[1], numberToStringSize[1]);
+    memcpy(positions[2], numberToString[2], numberToStringSize[2]);
+    // debug_messagefmt("--------------------------------\nModified Shader File:\n%s\n--------------------------------\n", source);
+    // markfmt("ntsSize: { %u %u %u }\nnts: { %s %s %s }\n", 
+    //     numberToStringSize[0],
+    //     numberToStringSize[1],
+    //     numberToStringSize[2],
+    //     numberToString[0],
+    //     numberToString[1],
+    //     numberToString[2]
+    // );
+    return;
+}
+
+
+
+
+bool Program::loadShader(ShaderData& init, BufferData const& loadedShader)
+{
+    i32 successStatus = GL_TRUE;
+    i32 length = __scast(i32, loadedShader.size);
+
+    
+    init.id = glCreateShader(init.type);
+    glShaderSource(init.id, 1, &loadedShader.data, &length);
+    glCompileShader(init.id);
+    glGetShaderiv(init.id, GL_COMPILE_STATUS, &successStatus);
+    if(!successStatus) {
+        glGetShaderInfoLog(init.id, genericErrorLogBuffer.size(), &length, genericErrorLogBuffer.data());
+        debug_messagefmt("Failed to Compile Shader [type %s] Error Log: \n%s\n", shaderTypeToString(init.type), genericErrorLogBuffer.data());
+
+        glDeleteShader(init.id);
+        init.id = DEFAULT32;
+    }
+
+    debug_messagefmt("returned %u for %s\n", successStatus, shaderTypeToString(init.type));
+    return boolean(successStatus);
+}
+
+
+void Program::refreshShaderSource(u32 shaderID, const char* filepath)
+{
+    BufferData buf = {nullptr, 0};
+
+
+    if(filepath != nullptr) {
+        shaders[shaderID].filepath = filepath;
+    }
+    filepath = shaders[shaderID].filepath; /* use default filepath if filepath == nullptr */
+
+
+    loadFile(filepath, &buf.size, nullptr);
+    sources[shaderID].resize(buf.size);
+    loadFile(filepath, &buf.size, sources[shaderID].data()); /* will crash if false, so no need to check return bool */
+    return;
+}
+
+
+void Program::refreshShaderSource(u32 shaderID, BufferData const& buffer)
+{
+    sources[shaderID].resize(buffer.size);
+    memcpy(sources[shaderID].data(), buffer.data, buffer.size);
+    return;
+}
+
+
+void Program::resizeLocalWorkGroup(u32 shaderID, math::vec3u const& workGroupSize)
+{
+    writeComputeGroupSizeToShader(sources[shaderID].data(), workGroupSize);
+    return;
+}
+
+
+bool Program::compile()
+{
+    size_t     i             = 0;
+    i32        successStatus = GL_TRUE;
+    BufferData populate      = {nullptr, 0};
+
+
+    /* Shader Compile stage Begin. */
+    for(; i < shaders.size() && successStatus; ++i) {
+        populate = {
+            sources[i].data(),
+            sources[i].size()
+        };
+        // debug_messagefmt("Loading shader [%s/%u ]with Buffer %p [%llu bytes]\nSource:\n%s\n", shaderTypeToString(shaders[i].type), shaders.size(), populate.data, populate.size, sources[i].data());
+        successStatus = successStatus && loadShader(shaders[i], populate); 
+    }
+    /* Shader Compile stage End. */
+    
+    /* Error Checking For Shader Stage */
+    if(!successStatus) {
+        debug_messagefmt("Failed to load Shader Files/Buffers. Failed on shaderID = %u\n", i);
+        for(size_t s = 0; s < i; ++s) { /* Delete previously compiled shaders */
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        }
+        return GL_FALSE;
+    }
+
+
+
+    /* Shader Program Creation Stage Begin. */
+    if(m_id != DEFAULT32) {
+        glDeleteProgram(m_id);
+    }
+    m_id = glCreateProgram();
+    
+
+    for(size_t i = 0; i < shaders.size(); ++i) {
+        glAttachShader(m_id, shaders[i].id);
+    }
+    glLinkProgram(m_id);
+    /* Shader Program Creation Stage End. */
+
+    /* Error Checking For Program Stage */
+    glGetProgramiv(m_id, GL_LINK_STATUS, &successStatus);
+    if(!successStatus) 
+    {
+        glGetProgramInfoLog(m_id, sizeof(genericErrorLogBuffer), NULL, genericErrorLogBuffer.data());
+        debug_messagefmt("Failed to link Shader Program id %u\nError Log: \n%s\n", 
+            m_id,
+            genericErrorLogBuffer.data()
+        );
+        glDeleteProgram(m_id);
+        m_id = DEFAULT32;
+    }
+
+    /* Delete All Shaders if necessary */
+    for(auto& shader : shaders) {
+        glDeleteShader(shader.id);
+        shader.id = DEFAULT32;
+    }
+    return successStatus;
+}
+
+
+void Program::bind()   { glUseProgram(m_id); }
+void Program::unbind() { glUseProgram(0);    }
+
+
+void Program::destroy()
+{
+    glDeleteProgram(m_id);
+    m_id = DEFAULT32;
+
+    shaders.clear();
+    sources.clear();
+    return;
+}
+
+
+
+
+#define CREATE_UNIFORM_FUNCTION_IMPL(TypeSpecifier, arg0, ...) \
+[[maybe_unused]] void Program::uniform##TypeSpecifier( \
+	std::string_view const& name, \
+	arg0 \
+	) { \
+		glUniform##TypeSpecifier( glGetUniformLocation(m_id, name.data()), __VA_ARGS__); \
+	} \
+
+
+CREATE_UNIFORM_FUNCTION_IMPL(1f,  f32 v, v);
+CREATE_UNIFORM_FUNCTION_IMPL(1i,  i32 v, v);
+CREATE_UNIFORM_FUNCTION_IMPL(1ui, u32 v, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(2f,  array2f const& v, v[0], v[1]			 );
+CREATE_UNIFORM_FUNCTION_IMPL(2i,  array2i const& v, v[0], v[1]			 );
+CREATE_UNIFORM_FUNCTION_IMPL(2ui, array2u const& v, v[0], v[1]			 );
+
+CREATE_UNIFORM_FUNCTION_IMPL(3f,  array3f const& v, v[0], v[1], v[2]		 );
+CREATE_UNIFORM_FUNCTION_IMPL(3i,  array3i const& v, v[0], v[1], v[2]		 );
+CREATE_UNIFORM_FUNCTION_IMPL(3ui, array3u const& v, v[0], v[1], v[2]		 );
+
+CREATE_UNIFORM_FUNCTION_IMPL(4f,  array4f const& v, v[0], v[1], v[2], v[3]);
+CREATE_UNIFORM_FUNCTION_IMPL(4i,  array4i const& v, v[0], v[1], v[2], v[3]);
+CREATE_UNIFORM_FUNCTION_IMPL(4ui, array4u const& v, v[0], v[1], v[2], v[3]);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1fv, f32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2fv, f32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3fv, f32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4fv, f32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1iv, i32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2iv, i32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3iv, i32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4iv, i32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1uiv, u32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2uiv, u32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3uiv, u32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4uiv, u32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x3fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x2fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x4fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x2fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x4fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x3fv, std::vector<f32> const& v, 1, false, v.data());
+
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x3fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x2fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x4fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x2fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x4fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x3fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv, math::mat4f const& v, 1, false, v.begin());
+#undef CREATE_UNIFORM_FUNCTION_IMPL

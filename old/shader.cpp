@@ -1,125 +1,351 @@
+#include <glad/glad.h>
 #include "shader.hpp"
-#include "file.hpp"
+#include "util/file.hpp"
 
 
 
 
-debugnobr(
-    static char genericErrorLog[512];
-);
-
-// static constexpr std::array<const char*, 3> to_string = {
-//     "GL_VERTEX_SHADER",
-//     "GL_FRAGMENT_SHADER",
-//     "GL_COMPUTE_SHADER",
-// };
-
-static constexpr std::array<u32, 3> to_gl_enum = {
-    GL_VERTEX_SHADER,
-    GL_FRAGMENT_SHADER,
-    GL_COMPUTE_SHADER
-};
-
-
-
-
-Shader::Shader(std::string_view const& path, u8 type)
+void writeComputeGroupSizeToShader(char* source, math::vec3u const& size)
 {
-    ShaderMetadata meta    = loadShader(path, type);
-    i32            success = static_cast<i32>(meta.srcLength);
-
-
-    id = glCreateShader(to_gl_enum[type]);
-    debugnobr(srcData = meta);
+    constexpr std::array<char[19], 3> substrings = {
+            "local_size_x = ",
+            "local_size_y = ",
+            "local_size_z = "
+    };
     
-    glShaderSource(id, 1, (char**)&meta.srcPointer, &success); /* Specify the shader source text to OpenGL */
-    afree_t(meta.srcPointer);
-    debugnobr(srcData.srcPointer = nullptr);
 
-
-    glCompileShader(id);
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-
-    ifcrashdo(!success, { /* Safety Check. More info in debug mode. */
-        glGetShaderInfoLog(id, sizeof(genericErrorLog), NULL, genericErrorLog);
-        printf("%s\n", genericErrorLog);
-    });
+    const std::array<u32, 3> numberToStringSize = {
+        __scast(u32, std::ceil( std::log10(size.x + (size.x == 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(size.y + (size.y == 1u)) )  ),
+        __scast(u32, std::ceil( std::log10(size.z + (size.z == 1u)) )  ) 
+    };
+    std::array<char[5], 3> numberToString = {
+        "    ",
+        "    ",
+        "    "
+    };
+    std::array<char*, 3> positions = { nullptr, nullptr, nullptr };
     
+    
+    sprintf(numberToString[0], "%u", size.x);
+    sprintf(numberToString[1], "%u", size.y);
+    sprintf(numberToString[2], "%u", size.z);
+    positions[0] = strstr(source, substrings[0]) + 15;
+    positions[1] = strstr(source, substrings[1]) + 15;
+    positions[2] = strstr(source, substrings[2]) + 15;
+    memcpy(positions[0], "   ", 3);
+    memcpy(positions[1], "   ", 3);
+    memcpy(positions[2], "   ", 3);
+    memcpy(positions[0], numberToString[0], numberToStringSize[0]);
+    memcpy(positions[1], numberToString[1], numberToStringSize[1]);
+    memcpy(positions[2], numberToString[2], numberToStringSize[2]);
+    // debug_messagefmt("--------------------------------\nModified Shader File:\n%s\n--------------------------------\n", source);
+    // markfmt("ntsSize: { %u %u %u }\nnts: { %s %s %s }\n", 
+    //     numberToStringSize[0],
+    //     numberToStringSize[1],
+    //     numberToStringSize[2],
+    //     numberToString[0],
+    //     numberToString[1],
+    //     numberToString[2]
+    // );
     return;
 }
 
 
-
-void ShaderProgram::create()
+constexpr const char* shaderTypeToString(u32 type)
 {
-    shaderID.reserve(4); // program, vertex, frag, compute
-    shaderID.push_back(glCreateProgram());
+    constexpr std::array<u32,         3> types = {  GL_VERTEX_SHADER,   GL_FRAGMENT_SHADER,   GL_COMPUTE_SHADER  };
+    constexpr std::array<const char*, 4> strs  = { "GL_VERTEX_SHADER", "GL_FRAGMENT_SHADER", "GL_COMPUTE_SHADER", "GL_SHADER_UNKOWN" };
+    size_t i = 0;
+    while(i < 3 && types[i] != type) ++i;
+    return strs[i];
+}
 
-    debugnobr(shaderDebug.reserve(4));
+
+
+
+void Program::bind()   const { glUseProgram(m_id); return; }
+void Program::unbind() const { glUseProgram(0);	   return; }
+void Program::destroy() 
+{
+    glDeleteProgram(m_id);
+    m_id = DEFAULT32;
     return;
 }
 
 
-void ShaderProgram::destroy()
+bool Program::loadShader(ShaderData& init, BufferData& loadedShader)
 {
-    glDeleteProgram(shaderID[0]);
-    return;
-}
+    i32 successStatus = GL_TRUE;
+    i32 length = __scast(i32, loadedShader.size);
 
+    init.id = glCreateShader(init.type);
+    glShaderSource(init.id, 1, &loadedShader.data, &length);
+    glCompileShader(init.id);
+    glGetShaderiv(init.id, GL_COMPILE_STATUS, &successStatus);
+    if(!successStatus) {
+        glGetShaderInfoLog(init.id, genericErrorLog.size(), &length, genericErrorLog.data());
+        printf("Shader [type %s] Error Log [%d Bytes]: %s\n", shaderTypeToString(init.type), length, genericErrorLog.data());
 
-ShaderProgram& ShaderProgram::addShader(Shader const& shader)
-{
-    shaderID.push_back(shader.id);
-    debugnobr(shaderDebug.push_back(shader.srcData));
-
-    return *this;
-}
-
-
-ShaderProgram& ShaderProgram::addShader(std::string_view const& path, u8 shaderType)
-{ 
-    Shader tmp{path, shaderType};
-    return addShader(tmp);
-}
-
-
-void ShaderProgram::finalize()
-{
-    i32 success;
-
-    for(size_t i = 1; i < shaderID.size(); ++i) {
-        glAttachShader(shaderID[0], shaderID[i]); /* ShaderID[0] is the ID of the shader Program. */
+        glDeleteShader(init.id);
+        init.id = DEFAULT32;
     }
 
-    /* Link shader program and check for errors. Delete shaders when finished. */
-	glLinkProgram(shaderID[0]);
-	glGetProgramiv(shaderID[0], GL_LINK_STATUS, &success);
-	ifcrashdo(!success, {
-		glGetProgramInfoLog(shaderID[0], sizeof(genericErrorLog), NULL, genericErrorLog);
-		printf("%s\n", genericErrorLog);
-	});
-
-	for(size_t i = 1; i < shaderID.size(); ++i) {
-		glDeleteShader(shaderID[i]);
-	}
-
-
-	return;
+    return boolean(successStatus);
 }
 
 
-
-
-ShaderMetadata loadShader(std::string_view const& path, u8 stype) 
+void Program::createProgram()
 {
-	ShaderMetadata mdata { stype, 0, nullptr };
+    i32 successStatus = GL_TRUE;
 
 
-	loadFile(path.cbegin(), (size_t*)&mdata.srcLength, (char*)mdata.srcPointer); /* Get Necessary Data in mdata */
-	
-    mdata.srcPointer = amalloc_t(u8, mdata.srcLength, CACHE_LINE_BYTES);
-	ifcrash(!boolean(mdata.srcPointer));
-	
-    loadFile(path.cbegin(), (size_t*)&mdata.srcLength, (char*)mdata.srcPointer);
-	return mdata;
+    m_id = glCreateProgram();
+    for(auto& shader: shaders) { 
+        glAttachShader(m_id, shader.id); 
+    }
+    glLinkProgram(m_id);
+
+
+    glGetProgramiv(m_id, GL_LINK_STATUS, &successStatus);
+    if(!successStatus) 
+    {
+        glGetProgramInfoLog(m_id, sizeof(genericErrorLog), NULL, genericErrorLog.data());
+        printf("%s\n", genericErrorLog.data());
+
+        glDeleteProgram(m_id);
+        m_id = DEFAULT32;
+    }
+
+    /* We do this whether successful or not, we don't need leftover shaders since we linked them already. */
+    for(auto& shader: shaders) { 
+        glDeleteShader(shader.id); 
+        shader.id = DEFAULT32; 
+    }
+    return;
 }
+
+
+void Program::fromFiles(std::vector<ShaderData> const& shaderInfo)
+{
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+
+
+    shaders = shaderInfo;
+    sources.resize(shaders.size());
+    for(; i < shaders.size() && successStatus; ++i)
+    {
+        buf.size = 0;
+        buf.data = nullptr;
+
+
+        /* we use the text obtained from the shader source for reloading the shader-program on the fly  */
+        loadFile(shaders[i].filepath, &buf.size, nullptr );
+        sources[i].resize(buf.size);
+        loadFile(shaders[i].filepath, &buf.size, sources[i].data());
+        
+
+        buf.data = sources[i].data();
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+    createProgram();
+    return;
+}
+
+
+void Program::fromBuffers(std::vector<loadedShader> const& buffers)
+{
+    shaders.reserve(buffers.size());
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+    
+
+    for(i = 0; i < buffers.size() && successStatus; ++i)
+    {
+        shaders[i].filepath = nullptr;
+        shaders[i].type 	= buffers[i].second;
+
+        buf = buffers[i].first;
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+
+    createProgram();
+    return;
+}
+
+
+void Program::fromFilesCompute(std::vector<ShaderData> const& shaderInfo, math::vec3u const& localWorkgroupSize)
+{
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+
+
+    shaders = shaderInfo;
+    sources.resize(shaders.size());
+    for(; i < shaders.size() && successStatus; ++i) /* this is going to be 1 anyway :/, maybe i should treat compute shaders a little differently. */
+    {
+        buf.size = 0;
+        buf.data = nullptr;
+
+
+        /* we use the text obtained from the shader source for reloading the shader-program on the fly  */
+        loadFile(shaders[i].filepath, &buf.size, nullptr );
+        sources[i].resize(buf.size);
+        loadFile(shaders[i].filepath, &buf.size, sources[i].data());
+
+
+        writeComputeGroupSizeToShader(sources[i].data(), localWorkgroupSize);
+
+
+        buf.data = sources[i].data();
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+    createProgram();
+    return;
+}
+
+
+void Program::reloadCompute(math::vec3u const& localWorkgroupSize) 
+{
+    i32 successStatus = GL_TRUE;
+    u32 i = 0;
+    BufferData buf = {};
+
+
+    for(; i < shaders.size() && successStatus; ++i) /* this is going to be 1 anyway :/, maybe i should treat compute shaders a little differently. */
+    {
+        buf.size = 0;
+        buf.data = nullptr;
+
+
+        /* we use the text obtained from the shader source for reloading the shader-program on the fly  */
+        loadFile(shaders[i].filepath, &buf.size, nullptr );
+        sources[i].resize(buf.size);
+        loadFile(shaders[i].filepath, &buf.size, sources[i].data());
+
+        writeComputeGroupSizeToShader(sources[i].data(), localWorkgroupSize);
+
+        buf.data = sources[i].data();
+        successStatus = successStatus && loadShader(shaders[i], buf);
+    }
+
+
+    if(!successStatus) 
+    {
+        debug_message("Shader Program Couldn't be created");
+        for(u32 s = 0; s < i; ++s) {
+            glDeleteShader(shaders[s].id);
+            shaders[s].id = DEFAULT32;
+        } 
+        return;
+    }
+
+    createProgram();
+    return;    
+}
+
+
+
+#define CREATE_UNIFORM_FUNCTION_IMPL(TypeSpecifier, arg0, ...) \
+[[maybe_unused]] void Program::uniform##TypeSpecifier( \
+	std::string_view const& name, \
+	arg0 \
+	) { \
+		glUniform##TypeSpecifier( glGetUniformLocation(m_id, name.data()), __VA_ARGS__); \
+	} \
+
+
+CREATE_UNIFORM_FUNCTION_IMPL(1f,  f32 v, v);
+CREATE_UNIFORM_FUNCTION_IMPL(1i,  i32 v, v);
+CREATE_UNIFORM_FUNCTION_IMPL(1ui, u32 v, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(2f,  array2f const& v, v[0], v[1]			 );
+CREATE_UNIFORM_FUNCTION_IMPL(2i,  array2i const& v, v[0], v[1]			 );
+CREATE_UNIFORM_FUNCTION_IMPL(2ui, array2u const& v, v[0], v[1]			 );
+
+CREATE_UNIFORM_FUNCTION_IMPL(3f,  array3f const& v, v[0], v[1], v[2]		 );
+CREATE_UNIFORM_FUNCTION_IMPL(3i,  array3i const& v, v[0], v[1], v[2]		 );
+CREATE_UNIFORM_FUNCTION_IMPL(3ui, array3u const& v, v[0], v[1], v[2]		 );
+
+CREATE_UNIFORM_FUNCTION_IMPL(4f,  array4f const& v, v[0], v[1], v[2], v[3]);
+CREATE_UNIFORM_FUNCTION_IMPL(4i,  array4i const& v, v[0], v[1], v[2], v[3]);
+CREATE_UNIFORM_FUNCTION_IMPL(4ui, array4u const& v, v[0], v[1], v[2], v[3]);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1fv, f32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2fv, f32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3fv, f32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4fv, f32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1iv, i32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2iv, i32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3iv, i32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4iv, i32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(1uiv, u32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2uiv, u32* v, 2, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3uiv, u32* v, 3, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4uiv, u32* v, 4, v);
+
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv,   std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x3fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x2fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x4fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x2fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x4fv, std::vector<f32> const& v, 1, false, v.data());
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x3fv, std::vector<f32> const& v, 1, false, v.data());
+
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv,   f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x3fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x2fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix2x4fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x2fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix3x4fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4x3fv, f32* v, 1, false, v);
+CREATE_UNIFORM_FUNCTION_IMPL(Matrix4fv, math::mat4f const& v, 1, false, v.begin());
+
+
+#undef CREATE_UNIFORM_FUNCTION_IMPL

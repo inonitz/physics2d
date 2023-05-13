@@ -1,119 +1,153 @@
 #pragma once
-#include "manvec.hpp"
-#include "glad/glad.h"
 #include <string_view>
+#include <vector>
+#include "vec.hpp"
 
 
 
 
-#define SHADER_TYPE_VERTEX   ((u8)0)
-#define SHADER_TYPE_FRAGMENT ((u8)1)
-#define SHADER_TYPE_COMPUTE  ((u8)2)
+struct ShaderData {
+	const char* filepath;
+	u32 	    type;
+	u32 		id;
 
-
-
-
-struct ShaderMetadata 
-{
-    u8  type;
-    u64 srcLength;
-    u8* srcPointer;
+	ShaderData(const char* fp, u32 glTypeEnum) : filepath{fp}, type{glTypeEnum}, id{DEFAULT32} {}
 };
 
 
-struct Shader 
-{
-    u32 id;
-#ifdef _DEBUG
-    ShaderMetadata srcData;
-#endif
-
-
-    Shader(std::string_view const& path, u8 type);
+struct BufferData {
+	char*  data;
+	size_t size;
 };
 
 
-struct ShaderProgram 
+constexpr const char* shaderTypeToString(u32 type);
+
+
+
+
+struct Program 
 {
-    std::vector<u32>            shaderID; // shader[0] is program ID
-#ifdef _DEBUG
-    std::vector<ShaderMetadata> shaderDebug;
-#endif
-    ShaderProgram() = default;
-    ~ShaderProgram() = default;
+public:
+	u32 m_id = DEFAULT32;
+
+private:
+	using shaderContents = std::vector<char>;
+	using shaderType 	 = u32;
+	using loadedShader   = std::pair<BufferData, shaderType>;
+
+    /* for CREATE_UNIFORM_FUNCTION_DEFINITON macro */
+    using array2f = std::array<f32, 2>;
+    using array3f = std::array<f32, 3>;
+    using array4f = std::array<f32, 4>;
+    using array2i = std::array<i32, 2>;
+    using array3i = std::array<i32, 3>;
+    using array4i = std::array<i32, 4>;
+    using array2u = std::array<u32, 2>;
+    using array3u = std::array<u32, 3>;
+    using array4u = std::array<u32, 4>;
 
 
-    void create();
+	static inline std::array<char, 1024> genericErrorLog;
+	std::vector<ShaderData> 	  shaders;
+	std::vector<shaderContents>   sources;
+	/* 
+		Honestly this (^^^) 'sources' variable makes more sense if we listened to file changes 
+		OR if we got an arg that specified which shader changed.
+		That being said, it's still nice seeing shader contents when debugging, so i'll keep this for now,
+		even though this is not so useful.
+	*/
+
+
+	bool loadShader(ShaderData& init, BufferData& loadedShader);
+	void createProgram();
+
+public:
+	void fromFiles(std::vector<ShaderData> const& shaderInfo);
+	void fromBuffers(std::vector<loadedShader> const& buffers);
+
+
+    void bind()   const;
+    void unbind() const;
     void destroy();
+	__force_inline bool success() const { return m_id != DEFAULT32; } 
 
 
-    ShaderProgram& addShader(Shader const& shader);
-    ShaderProgram& addShader(std::string_view const& path, u8 shaderType);
 
-    void finalize();
-    __force_inline void bind() const   { glUseProgram(shaderID[0]); return; }
-    static void unbindCurrentProgram() { glUseProgram(0);           return; }
+	void reload(std::vector<loadedShader> const& buffers = {})
+	{
+		if(m_id != DEFAULT32) destroy();
+		/* 
+			I could probably pick the common code-path from both of these functions
+			and get rid of the if statement, but this is fine for now. 
+		*/
+		if(buffers.size() != 0)
+		{
+			fromBuffers(buffers);
+		} else {
+			fromFiles(shaders);
+		}
+		return;
+	}
 
-
-    [[maybe_unused]] void 	      set1f(std::string_view const& name, f32 v						) 			         {          glUniform1f( glGetUniformLocation( shaderID[0], name.cbegin() ), v  		 			); }
-    [[maybe_unused]] void 	      set1i(std::string_view const& name, i32 v						) 			         {          glUniform1i( glGetUniformLocation( shaderID[0], name.cbegin() ), v  		 			); }
-    [[maybe_unused]] void 	      set1u(std::string_view const& name, u32 v		 				) 			         {         glUniform1ui( glGetUniformLocation( shaderID[0], name.cbegin() ), v  		 			); }
-    [[maybe_unused]] void 	      set2f(std::string_view const& name, std::array<f32, 2> const& v) 			         {          glUniform2f( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1]			 	); }
-    [[maybe_unused]] void 	      set2i(std::string_view const& name, std::array<i32, 2> const& v) 			         {          glUniform2i( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1]			 	); }
-    [[maybe_unused]] void 	      set2u(std::string_view const& name, std::array<u32, 2> const& v) 			         {         glUniform2ui( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1]			 	); }
-    [[maybe_unused]] void 	      set3f(std::string_view const& name, std::array<f32, 3> const& v) 			         {          glUniform3f( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2]		); }
-    [[maybe_unused]] void 	      set3i(std::string_view const& name, std::array<i32, 3> const& v) 			         {          glUniform3i( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2]		); }
-    [[maybe_unused]] void 	      set3u(std::string_view const& name, std::array<u32, 3> const& v) 			         {         glUniform3ui( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2]		); }
-    [[maybe_unused]] void 	      set4f(std::string_view const& name, std::array<f32, 4> const& v) 			         {          glUniform4f( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2], v[3]	); }
-    [[maybe_unused]] void 	      set4i(std::string_view const& name, std::array<i32, 4> const& v) 			         {          glUniform4i( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2], v[3]	); }
-    [[maybe_unused]] void 	      set4u(std::string_view const& name, std::array<u32, 4> const& v) 			         {         glUniform4ui( glGetUniformLocation( shaderID[0], name.cbegin() ), v[0], v[1], v[2], v[3]	); }
-    [[maybe_unused]] void 		 set1fv(std::string_view const& name, i64 count, const f32* buffer)    			     {         glUniform1fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set2fv(std::string_view const& name, i64 count, const f32* buffer)    			     {         glUniform2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set3fv(std::string_view const& name, i64 count, const f32* buffer)    			     {         glUniform3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set4fv(std::string_view const& name, i64 count, const f32* buffer)    			     {         glUniform4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set1iv(std::string_view const& name, i64 count, const i32* buffer)    			     {         glUniform1iv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set2iv(std::string_view const& name, i64 count, const i32* buffer)    			     {         glUniform2iv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set3iv(std::string_view const& name, i64 count, const i32* buffer)    			     {         glUniform3iv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set4iv(std::string_view const& name, i64 count, const i32* buffer)    			     {         glUniform4iv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set1uv(std::string_view const& name, i64 count, const u32* buffer)    			     {        glUniform1uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set2uv(std::string_view const& name, i64 count, const u32* buffer)    			     {        glUniform2uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set3uv(std::string_view const& name, i64 count, const u32* buffer)    			     {        glUniform3uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void 		 set4uv(std::string_view const& name, i64 count, const u32* buffer)    			     {        glUniform4uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, buffer 			  ); }
-    [[maybe_unused]] void   setMatrix2fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) {   glUniformMatrix2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void   setMatrix3fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) {   glUniformMatrix3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void   setMatrix4fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) {   glUniformMatrix4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix2x3fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix2x3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix3x2fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix3x2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix2x4fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix2x4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix4x2fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix4x2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix3x4fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix3x4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void setMatrix4x3fv(std::string_view const& name, i64 count, const f32* buffer, bool transpose) { glUniformMatrix4x3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), count, transpose, buffer ); }
-    [[maybe_unused]] void 		  set1fv(std::string_view const& name, std::vector<f32> const& buffer)    			   {         glUniform1fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set2fv(std::string_view const& name, std::vector<f32> const& buffer)    			   {         glUniform2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set3fv(std::string_view const& name, std::vector<f32> const& buffer)    			   {         glUniform3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set4fv(std::string_view const& name, std::vector<f32> const& buffer)    			   {         glUniform4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set1iv(std::string_view const& name, std::vector<i32> const& buffer)    			   {         glUniform1iv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set2iv(std::string_view const& name, std::vector<i32> const& buffer)    			   {         glUniform2iv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set3iv(std::string_view const& name, std::vector<i32> const& buffer)    			   {         glUniform3iv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set4iv(std::string_view const& name, std::vector<i32> const& buffer)    			   {         glUniform4iv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set1uv(std::string_view const& name, std::vector<u32> const& buffer)    			   {        glUniform1uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set2uv(std::string_view const& name, std::vector<u32> const& buffer)    			   {        glUniform2uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set3uv(std::string_view const& name, std::vector<u32> const& buffer)    			   {        glUniform3uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void 		  set4uv(std::string_view const& name, std::vector<u32> const& buffer)    			   {        glUniform4uiv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(),            buffer.begin().base() ); }
-    [[maybe_unused]] void   setMatrix2fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) {   glUniformMatrix2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void   setMatrix3fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) {   glUniformMatrix3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void   setMatrix4fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) {   glUniformMatrix4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix2x3fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix2x3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix3x2fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix3x2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix2x4fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix2x4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix4x2fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix4x2fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix3x4fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix3x4fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
-    [[maybe_unused]] void setMatrix4x3fv(std::string_view const& name, std::vector<f32> const& buffer, bool transpose) { glUniformMatrix4x3fv( glGetUniformLocation( shaderID[0], name.cbegin() ), buffer.size(), transpose, buffer.begin().base() ); }
+	void fromFilesCompute(
+		std::vector<ShaderData> const& shaderInfo, 
+		math::vec3u 			const& localWorkgroupSize = { 32, 48, 1 }
+	);
+	void reloadCompute(math::vec3u const& localWorkgroupSize = { 32, 48, 1 });
 
 
+#define CREATE_UNIFORM_FUNCTION_DEFINITON(TypeSpecifier, arg0) [[maybe_unused]] void uniform##TypeSpecifier(std::string_view const& name, arg0);
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1f,  f32 v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1i,  i32 v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1ui, u32 v)
+
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2f,  array2f const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2i,  array2i const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2ui, array2u const& v)
+	
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3f,  array3f const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3i,  array3i const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3ui, array3u const& v)
+	
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4f,  array4f const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4i,  array4i const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4ui, array4u const& v)
+	
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4fv, f32* v)
+	
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1iv, i32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2iv, i32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3iv, i32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4iv, i32* v)
+
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1uiv, u32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2uiv, u32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3uiv, u32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4uiv, u32* v)
+
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, std::vector<f32> const& v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, std::vector<f32> const& v)
+	
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, f32* v)
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv, math::mat4f const& v)
+#undef CREATE_UNIFORM_FUNCTION_DEFINITON
 };
-
-
-
-
-ShaderMetadata loadShader(std::string_view const& path, u8 stype);

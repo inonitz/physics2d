@@ -1,6 +1,6 @@
 
-# COMPILER_BASE_FOLDER = "C:/CTools/mingw64-msvcrt"
-COMPILER_BASE_FOLDER = "C:/Program Files/Programming Utillities/mingw-ucrt"
+COMPILER_BASE_FOLDER = "C:/CTools/mingw64-msvcrt"
+# COMPILER_BASE_FOLDER = "C:/Program Files/Programming Utillities/mingw-ucrt"
 PROJECT_FOLDER_BASE  = $(shell pwd)
 PROJECT_FOLDER       = "$(shell cygpath -m $(PROJECT_FOLDER_BASE))"
 
@@ -32,7 +32,7 @@ CXXVERSION = c++17
 # -lsystem$(COMPILER_BASE_FOLDER)/x86_64-w64-mingw32/bin \
 
 LIB_FILES     = -lglfw3dll
-LIB_INC_PATHS = -I$(PROJECT_FOLDER)/src/include
+LIB_INC_PATHS = -I$(PROJECT_FOLDER)/src/include -I$(PROJECT_FOLDER)/src
 LIB_PATHS     = -L$(COMPILER_BASE_FOLDER)/../lib/GLFW/lib
 
 

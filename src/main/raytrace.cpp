@@ -1,12 +1,11 @@
 #include "raytrace.hpp"
 #include <glad/glad.h>
 #include <ImGui/imgui.h>
-#include <math.h>
+#include "util/random.hpp"
 #include "../context.hpp"
-#include "../shader.hpp"
-#include "../vertexArray.hpp"
-#include "../texture.hpp"
-#include "../random.hpp"
+#include "gl/shader2.hpp"
+#include "gl/vertexArray.hpp"
+#include "gl/texture.hpp"
 
 
 
@@ -26,7 +25,14 @@ std::vector<u32> squareIndices =
 };
 
 
-math::vec3u recomputeDispatchSize(math::vec2u const& dims)
+struct ComputeGroupSizes
+{
+	math::vec3u localGroup;
+	math::vec3u dispatchGroup;
+};
+
+
+ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims)
 {
 	math::vec3u localWorkgroupSize{32, 1, 1};
 	i32 		max_group_invoc;
@@ -40,7 +46,6 @@ math::vec3u recomputeDispatchSize(math::vec2u const& dims)
 	tmp_cvt.x = std::ceil(tmp_cvt.x); 	    /* get ceiling of division */
 	localWorkgroupSize.y = __scast( u32, tmp_cvt.x );
 
-
 	tmp_cvt.x = __scast(f32, dims.x);
 	tmp_cvt.y = __scast(f32, dims.y);
 	tmp_cvt1.x = __scast(f32, localWorkgroupSize.x);
@@ -48,17 +53,16 @@ math::vec3u recomputeDispatchSize(math::vec2u const& dims)
 	tmp_cvt = tmp_cvt / tmp_cvt1;
 	tmp_cvt.x = std::ceil(tmp_cvt.x);
 	tmp_cvt.y = std::ceil(tmp_cvt.y);
-	
+
 	debug_messagefmt("recomputeDispatchSize:\n    Local workgroup Size of { %u %u %u }\n    Workgroup Dispatch Size { %u %u %u }\n", 
 		localWorkgroupSize.x, localWorkgroupSize.y, 1,
 		(u32)tmp_cvt.x, 	  (u32)tmp_cvt.y, 1
 	);
 	
 	
-	return {
-		__scast(u32, tmp_cvt.x),
-		__scast(u32, tmp_cvt.y),
-		1u
+	return ComputeGroupSizes{
+		localWorkgroupSize,
+		{ __scast(u32, tmp_cvt.x), __scast(u32, tmp_cvt.y), 1u }
 	};
 }
 
@@ -117,8 +121,7 @@ int raytracer()
 	u32 windowWidth = 1280, windowHeight = 720;
 	i32 uniform_samplesppx = 16;
 	f32 uniform_randnum    = randnorm32f();
-	math::vec3u computeGroups = recomputeDispatchSize({ windowWidth, windowHeight });
-
+	ComputeGroupSizes invocDims;
 	Program shader, compute;
 	VertexArray   vao;
 	TextureBuffer tex;
@@ -138,34 +141,30 @@ int raytracer()
 	/* Init */
     context->glfw.create(windowWidth, windowHeight, eventFuncs);	
 	context->frameIndex = 0;
-	
 
 	/* Initialize OpenGL stuff */
 	debug( /* Enable Advanced Debugging if enabled. */
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
 	glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
 
 
 
-
-
-	shader.fromFiles({
-		{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.vert", GL_VERTEX_SHADER   },
-		{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.frag", GL_FRAGMENT_SHADER }
+	invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
+	// C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/
+	shader.createFrom({
+		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert", GL_VERTEX_SHADER   },
+		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag", GL_FRAGMENT_SHADER }
 	});
-	compute.fromFilesCompute({
-			{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.comp", GL_COMPUTE_SHADER },
-		},
-		computeGroups
-	);
-
-	ifcrash(!shader.success() || !compute.success());
+	compute.createFrom({
+			{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.comp", GL_COMPUTE_SHADER },
+	}); 
+	compute.resizeLocalWorkGroup(0, invocDims.localGroup);
 
 
 	vbo.create(BufferDescriptor{ 
@@ -211,6 +210,8 @@ int raytracer()
 
 
 	/* Main Loop */
+	ifcrashdo(shader.compile()  == GL_FALSE, debug_message("Problem Compiling Vertex-Fragment Shader\n"));
+	ifcrashdo(compute.compile() == GL_FALSE, debug_message("Problem Compiling Compute Shader\n")		);
 	context->glfw.unlockCursor();
 	running = !context->glfw.shouldClose() && !isKeyPressed(KeyCode::ESCAPE);
 	while (running)
@@ -219,14 +220,18 @@ int raytracer()
         context->glfw.procUpcomingEvents();
 		if(focused)
 		{
-			renderImGui(uniform_samplesppx, uniform_randnum, computeGroups);
+			renderImGui(uniform_samplesppx, uniform_randnum, invocDims.dispatchGroup);
 			if(!paused)
 			{
 				/* Compute Shader Pass Here */
 				compute.bind();
 				compute.uniform1f("u_dt", uniform_randnum);
 				compute.uniform1i("samples_per_pixel", uniform_samplesppx);
-				glDispatchCompute(computeGroups.x, computeGroups.y, computeGroups.z);
+				glDispatchCompute(
+					invocDims.dispatchGroup.x, 
+					invocDims.dispatchGroup.y, 
+					invocDims.dispatchGroup.z
+				);
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
 				
@@ -242,25 +247,27 @@ int raytracer()
 			}
 
 
-			// context->glfw.setCursorMode( !paused);
+			//context->glfw.setCursorMode( !paused);
             if(refresh[0]) {
-                shader.reload();
-                refresh[0] = shader.success();
+                shader.refreshFromFiles();
+                refresh[0] = !shader.compile();
             }
             if(refresh[1]) {
-                compute.reload();
-                refresh[1] = compute.success();
+				compute.resizeLocalWorkGroup(0, invocDims.localGroup);
+				refresh[1] = !compute.compile();
             }
+
+
 			if(changedResolution)
 			{
+				mark();
 				windowWidth  = context->glfw.dims[0];
 				windowHeight = context->glfw.dims[1];
 				tex.recreateImage({ windowWidth, windowHeight });
 				tex.bindToUnit(0);
 				tex.bindToImage(0, TEX_IMAGE_WRITE_ONLY_ACCESS);
 				
-				computeGroups = recomputeDispatchSize({ windowWidth, windowHeight });
-				compute.reloadCompute(computeGroups);
+				invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
 			}
 		}
 
@@ -269,7 +276,7 @@ int raytracer()
         focused = !context->glfw.minimized();
         paused  = paused ^ isKeyPressed(KeyCode::P);
 		refresh[0] = isKeyPressed(KeyCode::NUM9);
-        refresh[1] = isKeyPressed(KeyCode::NUM0);
+        refresh[1] = isKeyPressed(KeyCode::NUM0) || changedResolution;
 		changedResolution = context->glfw.windowSizeChanged();
 
 
@@ -281,6 +288,22 @@ int raytracer()
 
 	compute.destroy();
 	shader.destroy();
+	tex.destroy();
+	vbo.destroy();
+	ibo.destroy();
 	context->glfw.destroy();
 	return 0;
 }
+
+
+
+/*
+
+
+Image isn't rendered to screen, 
+both in basicpp.cpp and raytrace.cpp, 
+Problem is with (probably) VertexFragment Shader, 
+as reloading shows the texture again (but black). 
+Further Testing Needed.
+
+*/

@@ -3,7 +3,7 @@
 #include <stb_image/stb_image.hpp>
 #include <ImGui/imgui.h>
 #include "../context.hpp"
-#include "../shader.hpp"
+#include "gl/shader2.hpp"
 
 
 
@@ -88,11 +88,11 @@ int basicpp()
 	
 
 
-	shader.fromFiles({
+	shader.createFrom({
 		{ assetPaths[0], GL_VERTEX_SHADER   },
 		{ assetPaths[1], GL_FRAGMENT_SHADER }
 	});
-	compute.fromFiles({
+	compute.createFrom({
 		{ assetPaths[2], GL_COMPUTE_SHADER }
 	});
 
@@ -160,7 +160,7 @@ int basicpp()
 				context->persp.recalculate();
 			
 				compute.bind();
-				glDispatchCompute(width / 64, height, 1);
+				glDispatchCompute(width, height, 1);
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 				shader.bind();
@@ -175,12 +175,12 @@ int basicpp()
 
 			context->glfw.setCursorMode( !paused);
             if(refresh[0]) {
-                shader.reload();
-                refresh[0] = shader.success();
+                shader.refreshFromFiles();
+                refresh[0] = shader.compile();
             }
             if(refresh[1]) {
-                compute.reload();
-                refresh[1] = compute.success();
+                compute.refreshFromFiles();
+                refresh[1] = compute.compile();
             }
 		}
 

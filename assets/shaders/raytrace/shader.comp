@@ -1,5 +1,5 @@
 #version 460 core
-layout(local_size_x = 32 , local_size_y = 48 , local_size_z = 1  ) in;
+layout(local_size_x =    , local_size_y =    , local_size_z = 1  ) in;
 layout(rgba32f, binding = 0) writeonly restrict uniform image2D imageOut;
 
 
@@ -186,8 +186,8 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
 
         /* Get color from intersection data */
         backgroundCol = defaultRayColor(cameraRayAtUV);
-        hitColor      = 0.5f * ( possibleHit.normal + 1.0f ); 
-        outColor += mix(backgroundCol, hitColor, !isinf(possibleHit.t));
+        hitColor      = 0.5f * ( possibleHit.normal + 1.0f );
+        outColor += mix(backgroundCol, hitColor, bvec3(!isinf(possibleHit.t)));
     }
 
 
@@ -198,100 +198,13 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
 
 void main()
 {
-    /* Image Output Coordinates (pixel uv coord) */
-    ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
-    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
-    vec2  currTexel;
-
-    /* Output screen data */
-    ivec2 windowSize  = imageSize(imageOut);
-    float aspectRatio = float(windowSize.x) / float(windowSize.y);
-
-    /* intermediates for calculations */
-    vec3 finalColor = vec3(0.0f);
-
-
-    // if(texelCoord.y + texelCoord.x * windowSize.x >= windowSize.x * windowSize.y) {
-    //     return;
-    // }
-
-    CameraTransform camera = CameraTransform( /* in reality this would change its data on a resize of the window, which will be updated in the ssbo. */
-        vec3(0.0f, 0.0f, 0.0f),         /* Position */
-        vec2(aspectRatio * 2.0f, 2.0f), /* Viewport Width, height */
-        1.0f,                           /* focal length */
-        0                               /* reserved */
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    vec4 value = vec4(
+        float(texelCoord.x)/(gl_NumWorkGroups.x),
+        float(texelCoord.y)/(gl_NumWorkGroups.y),
+        0.0f,
+        1.0f
     );
-
-
-    Sphere objects[2] = {
-        Sphere(vec4(0.0f, 0.0f,    -1.0f, 0.5f  )),
-        Sphere(vec4(0.0f, -100.5f, -1.0f, 100.0f))
-    };
-
-
-    texelCoord  = ivec2(gl_GlobalInvocationID.xy);
-    texelCoordf = vec2(gl_GlobalInvocationID.xy) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
-    finalColor = CalculatePixelColor(camera, objects, texelCoordf);
-    finalColor = pow(finalColor, vec3(1.0f/2.2f));
-    imageStore(imageOut, texelCoord, vec4(finalColor, 1.0f));
+    imageStore(imageOut, texelCoord, value);
     return;
 }
-
-
-
-
-
-
-
-
-
-
-
-//    vec4 value = vec4(
-//        float(texelCoord.x)/(gl_NumWorkGroups.x),
-//        float(texelCoord.y)/(gl_NumWorkGroups.y),
-//        0.0f,
-//        1.0f
-//    );
-
-
-//    Sphere a[2] = {
-//        Sphere(vec3(0.0f, 0.0f,    -1.0f), 0.5f  ),
-//        Sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f)
-//    };
-//
-//
-//    SphereRayIntersectionResult intersect;
-//    Ray cameraRayAtUV = cameraGetRay(camera, camera.pos, texelCoordf);
-//    worldRayIntersection(a, cameraRayAtUV, intersect);
-//
-//
-//    if(isinf(intersect.t)) {
-//        intersect.normal = vec3(0.0f, 0.0f, 0.0f);
-//    } else {
-//        intersect.normal = vec3(0.5f) * ( intersect.normal + vec3(1.0f) );
-//    }
-//
-//    value = vec4(
-//        intersect.normal,
-//        1.0f
-//    );
-
-
-// void main()
-// {
-//     ivec2 windowSize = imageSize(imageOut);
-//     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-//     vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
-//     float aspectRatio = float(windowSize.x) / float(windowSize.y);
-// 
-//     Camera camera = Camera(
-//         vec3(0.0f, 0.0f, 0.0f), /* Position */
-//         vec2(aspectRatio * 2.0f, 2.0f), /* Viewport Width, height */
-//         1.0f /* focal length */
-//     );
-// 
-//     Ray currentRay = cameraGetRay(camera, camera.pos, texelCoordf);
-//     vec3 hitColor = defaultRayColor(currentRay);
-//     imageStore(imageOut, texelCoord, vec4(hitColor, 1.0f));
-// }
