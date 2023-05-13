@@ -208,3 +208,47 @@ void main()
     imageStore(imageOut, texelCoord, value);
     return;
 }
+
+
+/*
+void main()
+{
+    /* Image Output Coordinates (pixel uv coord) */
+    ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
+    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
+    vec2  currTexel;
+
+    /* Output screen data */
+    ivec2 windowSize  = imageSize(imageOut);
+    float aspectRatio = float(windowSize.x) / float(windowSize.y);
+
+    /* intermediates for calculations */
+    vec3 finalColor = vec3(0.0f);
+
+
+    // if(texelCoord.y + texelCoord.x * windowSize.x >= windowSize.x * windowSize.y) {
+    //     return;
+    // }
+
+    CameraTransform camera = CameraTransform( /* in reality this would change its data on a resize of the window, which will be updated in the ssbo. */
+        vec3(0.0f, 0.0f, 0.0f),         /* Position */
+        vec2(aspectRatio * 2.0f, 2.0f), /* Viewport Width, height */
+        1.0f,                           /* focal length */
+        0                               /* reserved */
+    );
+
+
+    Sphere objects[2] = {
+        Sphere(vec4(0.0f, 0.0f,    -1.0f, 0.5f  )),
+        Sphere(vec4(0.0f, -100.5f, -1.0f, 100.0f))
+    };
+
+
+    texelCoord  = ivec2(gl_GlobalInvocationID.xy);
+    texelCoordf = vec2(gl_GlobalInvocationID.xy) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
+    finalColor = CalculatePixelColor(camera, objects, texelCoordf);
+    finalColor = pow(finalColor, vec3(1.0f/2.2f));
+    imageStore(imageOut, texelCoord, vec4(finalColor, 1.0f));
+    return;
+}
+*/
