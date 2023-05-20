@@ -27,7 +27,7 @@ constexpr const char* shaderTypeToString(u32 type);
 
 
 
-struct Program 
+typedef struct ShaderProgramV2 
 {
 private:
 	using shaderContents = std::vector<char>;
@@ -198,6 +198,6 @@ private:
     u32 m_id = DEFAULT32;
 	std::vector<ShaderData> 	shaders;
 	std::vector<shaderContents> sources;
-};
+} Program;
 
 

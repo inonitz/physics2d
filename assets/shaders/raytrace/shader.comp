@@ -1,10 +1,11 @@
 #version 460 core
-layout(local_size_x =    , local_size_y =    , local_size_z = 1  ) in;
+layout(local_size_x =    , local_size_y =    , local_size_z =    ) in;
 layout(rgba32f, binding = 0) writeonly restrict uniform image2D imageOut;
 
 
-layout(location = 2) uniform float u_dt;
-layout(location = 3) uniform int   samples_per_pixel;
+layout(location = 2) uniform vec4 u_randnum;
+layout(location = 3) uniform int  u_samplesPpx;
+// layout(location = 4) uniform int   u_recurseDepth;
 
 
 const float c_infinity = 1. / 0.;
@@ -45,10 +46,10 @@ struct Sphere
 
 struct CameraTransform
 {
-	vec3  position;
-	vec2  viewport;
-	float focal_length; /* Distance from camera origin to camera Screen */
-	int   reserved;
+    vec3  position;
+    vec2  viewport;
+    float focal_length; /* Distance from camera origin to camera Screen */
+    int   reserved;
 };
 Ray cameraGetRay(CameraTransform cam, vec3 rayOrigin, vec2 uv) /* Camera pointing towards -Z axis */
 {
@@ -168,15 +169,16 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
     vec3 backgroundCol, hitColor, outColor = hitColor = backgroundCol = vec3(0.0f);
     Ray  cameraRayAtUV;
     vec2 currTexel;
-    const float pixel_samples_inv = 1.0f / float(samples_per_pixel);
+    const float pixel_samples_inv = 1.0f / float(u_samplesPpx);
 
 
-    for(uint sampleIdx = 0; sampleIdx < samples_per_pixel; ++sampleIdx) {
+    for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
+        // currTexel = texelCoord;
         currTexel = texelCoord + vec2(clamp(
-            random(  vec3(texelCoord, u_dt * sampleIdx)  ),
+            random(  vec3(texelCoord, u_randnum.x * sampleIdx)  ),
             0.000f,
             0.999f
-        ) * u_dt * pixel_samples_inv);
+        ) * u_randnum.x * pixel_samples_inv);
 
 
         /* Find Intersections with Objects in Scene */
@@ -186,8 +188,8 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
 
         /* Get color from intersection data */
         backgroundCol = defaultRayColor(cameraRayAtUV);
-        hitColor      = 0.5f * ( possibleHit.normal + 1.0f );
-        outColor += mix(backgroundCol, hitColor, bvec3(!isinf(possibleHit.t)));
+        hitColor      = 0.5f * ( possibleHit.normal + 1.0f ); 
+        outColor += mix(backgroundCol, hitColor, !isinf(possibleHit.t));
     }
 
 
@@ -196,21 +198,6 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
 }
 
 
-void main()
-{
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    vec4 value = vec4(
-        float(texelCoord.x)/(gl_NumWorkGroups.x),
-        float(texelCoord.y)/(gl_NumWorkGroups.y),
-        0.0f,
-        1.0f
-    );
-    imageStore(imageOut, texelCoord, value);
-    return;
-}
-
-
-/*
 void main()
 {
     /* Image Output Coordinates (pixel uv coord) */
@@ -251,4 +238,62 @@ void main()
     imageStore(imageOut, texelCoord, vec4(finalColor, 1.0f));
     return;
 }
-*/
+
+
+
+
+
+
+
+
+
+
+
+//    vec4 value = vec4(
+//        float(texelCoord.x)/(gl_NumWorkGroups.x),
+//        float(texelCoord.y)/(gl_NumWorkGroups.y),
+//        0.0f,
+//        1.0f
+//    );
+
+
+//    Sphere a[2] = {
+//        Sphere(vec3(0.0f, 0.0f,    -1.0f), 0.5f  ),
+//        Sphere(vec3(0.0f, -100.5f, -1.0f), 100.0f)
+//    };
+//
+//
+//    SphereRayIntersectionResult intersect;
+//    Ray cameraRayAtUV = cameraGetRay(camera, camera.pos, texelCoordf);
+//    worldRayIntersection(a, cameraRayAtUV, intersect);
+//
+//
+//    if(isinf(intersect.t)) {
+//        intersect.normal = vec3(0.0f, 0.0f, 0.0f);
+//    } else {
+//        intersect.normal = vec3(0.5f) * ( intersect.normal + vec3(1.0f) );
+//    }
+//
+//    value = vec4(
+//        intersect.normal,
+//        1.0f
+//    );
+
+
+// void main()
+// {
+//     ivec2 windowSize = imageSize(imageOut);
+//     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+//     vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
+//     float aspectRatio = float(windowSize.x) / float(windowSize.y);
+// 
+//     Camera camera = Camera(
+//         vec3(0.0f, 0.0f, 0.0f), /* Position */
+//         vec2(aspectRatio * 2.0f, 2.0f), /* Viewport Width, height */
+//         1.0f /* focal length */
+//     );
+// 
+//     Ray currentRay = cameraGetRay(camera, camera.pos, texelCoordf);
+//     vec3 hitColor = defaultRayColor(currentRay);
+//     imageStore(imageOut, texelCoord, vec4(hitColor, 1.0f));
+// }

@@ -41,7 +41,7 @@ struct TextureBufferDescriptor
 
 
 
-struct TextureBuffer /* tex2D with a single level of detail */
+typedef struct UpdatedTextureBuffer /* tex2D with a single level of detail */
 {
 public:
 	void create(TextureBufferDescriptor const& info);
@@ -60,4 +60,4 @@ private:
 	u32 bindingUnit = DEFAULT32;
 	
 	TextureBufferDescriptor info;
-};
+} TextureBuffer;

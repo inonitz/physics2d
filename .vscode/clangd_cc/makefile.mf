@@ -1,6 +1,5 @@
-
-COMPILER_BASE_FOLDER = "C:/CTools/mingw64-msvcrt"
-# COMPILER_BASE_FOLDER = "C:/Program Files/Programming Utillities/mingw-ucrt"
+# COMPILER_BASE_FOLDER = "C:/CTools/mingw64-msvcrt"
+COMPILER_BASE_FOLDER = "C:/Program Files/Programming Utillities/mingw-ucrt"
 PROJECT_FOLDER_BASE  = $(shell pwd)
 PROJECT_FOLDER       = "$(shell cygpath -m $(PROJECT_FOLDER_BASE))"
 

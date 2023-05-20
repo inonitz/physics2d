@@ -143,7 +143,7 @@ bool Program::compile()
     
     /* Error Checking For Shader Stage */
     if(!successStatus) {
-        debug_messagefmt("Failed to load Shader Files/Buffers. Failed on shaderID = %u\n", i);
+        debug_messagefmt("Failed to load Shader Files/Buffers. Failed on shaderID = %llu\n", i);
         for(size_t s = 0; s < i; ++s) { /* Delete previously compiled shaders */
             glDeleteShader(shaders[s].id);
             shaders[s].id = DEFAULT32;
@@ -231,19 +231,19 @@ CREATE_UNIFORM_FUNCTION_IMPL(4i,  array4i const& v, v[0], v[1], v[2], v[3]);
 CREATE_UNIFORM_FUNCTION_IMPL(4ui, array4u const& v, v[0], v[1], v[2], v[3]);
 
 CREATE_UNIFORM_FUNCTION_IMPL(1fv, f32* v, 1, v);
-CREATE_UNIFORM_FUNCTION_IMPL(2fv, f32* v, 2, v);
-CREATE_UNIFORM_FUNCTION_IMPL(3fv, f32* v, 3, v);
-CREATE_UNIFORM_FUNCTION_IMPL(4fv, f32* v, 4, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2fv, f32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3fv, f32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4fv, f32* v, 1, v);
 
 CREATE_UNIFORM_FUNCTION_IMPL(1iv, i32* v, 1, v);
-CREATE_UNIFORM_FUNCTION_IMPL(2iv, i32* v, 2, v);
-CREATE_UNIFORM_FUNCTION_IMPL(3iv, i32* v, 3, v);
-CREATE_UNIFORM_FUNCTION_IMPL(4iv, i32* v, 4, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2iv, i32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3iv, i32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4iv, i32* v, 1, v);
 
 CREATE_UNIFORM_FUNCTION_IMPL(1uiv, u32* v, 1, v);
-CREATE_UNIFORM_FUNCTION_IMPL(2uiv, u32* v, 2, v);
-CREATE_UNIFORM_FUNCTION_IMPL(3uiv, u32* v, 3, v);
-CREATE_UNIFORM_FUNCTION_IMPL(4uiv, u32* v, 4, v);
+CREATE_UNIFORM_FUNCTION_IMPL(2uiv, u32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(3uiv, u32* v, 1, v);
+CREATE_UNIFORM_FUNCTION_IMPL(4uiv, u32* v, 1, v);
 
 CREATE_UNIFORM_FUNCTION_IMPL(Matrix2fv,   std::vector<f32> const& v, 1, false, v.data());
 CREATE_UNIFORM_FUNCTION_IMPL(Matrix3fv,   std::vector<f32> const& v, 1, false, v.data());
