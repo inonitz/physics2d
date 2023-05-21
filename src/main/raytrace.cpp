@@ -18,9 +18,11 @@ int raytracer()
 	};
 	bool running, focused = true, paused = false, changedResolution = false, refresh[3] = { false, false, false };
 	u32 windowWidth = 1280, windowHeight = 720;
-	i32 		uniform_samplesppx    = 1;
-	i32 		uniform_diffRecursion = 10; 
-	math::vec4f uniform_randnum       = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	i32 		uniform_samplesppx     = 1;
+	i32 		uniform_diffRecursion  = 10;
+	i32         uniform_imgScatter     = -10;
+	f32 		uniform_imgScatterBase = 1.5f;
+	math::vec4f uniform_randnum        = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
 	ComputeGroupSizes invocDims;
 	Program shader, compute;
 	VertexArray   vao;
@@ -47,8 +49,8 @@ int raytracer()
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
 	glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
@@ -61,11 +63,11 @@ int raytracer()
 	*/
 	invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
 	shader.createFrom({
-		{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.vert", GL_VERTEX_SHADER   },
-		{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.frag", GL_FRAGMENT_SHADER }
+		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert", GL_VERTEX_SHADER   },
+		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag", GL_FRAGMENT_SHADER }
 	});
 	compute.createFrom({
-			{ "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp", GL_COMPUTE_SHADER },
+			{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp", GL_COMPUTE_SHADER },
 	}); compute.resizeLocalWorkGroup(0, invocDims.localGroup);
 
 	ifcrashdo(shader.compile()  == GL_FALSE, debug_message("Problem Compiling Vertex-Fragment Shader\n"));
@@ -122,14 +124,24 @@ int raytracer()
         context->glfw.procUpcomingEvents();
 		if(focused)
 		{
-			renderImGui(uniform_samplesppx, uniform_diffRecursion , uniform_randnum, invocDims.dispatchGroup);
+			renderImGui(
+				uniform_samplesppx, 
+				uniform_diffRecursion , 
+				uniform_imgScatter,
+				uniform_imgScatterBase,
+				uniform_randnum,
+				invocDims.dispatchGroup
+			);
 			if(!paused)
 			{
 				/* Compute Shader Pass Here */
+				// uniform_randnum = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
 				compute.bind();
 				compute.uniform4fv("u_dt"         , uniform_randnum.begin());
 				compute.uniform1i("u_samplesPpx"  , uniform_samplesppx     );
 				compute.uniform1i("u_recurseDepth", uniform_diffRecursion  );
+				compute.uniform1i("u_scatterFactor", uniform_imgScatter    );
+				compute.uniform1f("u_scatterBase"  , uniform_imgScatterBase);
 				glDispatchCompute(
 					invocDims.dispatchGroup.x, 
 					invocDims.dispatchGroup.y, 

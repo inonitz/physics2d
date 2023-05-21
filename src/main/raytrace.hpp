@@ -30,9 +30,14 @@ struct ComputeGroupSizes
 
 
 inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims);
-inline void renderImGui(i32& out_samples, i32& recursionDepth, math::vec4f const& sample_randf, math::vec3u const& computeDispatchSize);
-
-
+inline void renderImGui(
+	i32& 			   out_samples, 
+	i32& 			   recursionDepth, 
+	i32& 			   imgScatteringFactor,
+	f32&               imgScatteringBasePowFactor,
+	math::vec4f const& sample_randf, 
+	math::vec3u const& computeDispatchSize
+);
 
 int raytracer();
 
@@ -80,8 +85,14 @@ inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims)
 
 
 
-void renderImGui(i32& out_samples, i32& recursionDepth, math::vec4f const& sample_randf, math::vec3u const& computeDispatchSize)
-{
+void renderImGui(
+	i32& 			   out_samples, 
+	i32& 			   recursionDepth, 
+	i32& 			   imgScatteringFactor,
+	f32&               imgScatteringBasePowFactor,
+	math::vec4f const& sample_randf, 
+	math::vec3u const& computeDispatchSize
+) {
 	auto* ctx = getGlobalContext();
 	std::array<i32, 2> windowDims = ctx->glfw.dims;
 	i32 work_grp_inf[7];
@@ -116,6 +127,8 @@ void renderImGui(i32& out_samples, i32& recursionDepth, math::vec4f const& sampl
 	ImGui::Text("Random Floats For Rand  Sphere  = { %.05f, %.05f, %.05f }", sample_randf.y, sample_randf.z, sample_randf.w);
 	ImGui::SliderInt("Random Samples Per Pixel ", &out_samples   , 0, 128);
 	ImGui::SliderInt("Diffusion-Recursion Depth", &recursionDepth, 0, 64 );
+	ImGui::SliderInt("Texel Coord Scatter Power Factor", &imgScatteringFactor, -20, 20);
+	ImGui::InputFloat("Texel Coord Scatter Base Factor", &imgScatteringBasePowFactor, .1f, 0.0f, "%.05f");
 	ImGui::EndGroup();
 	return;
 }

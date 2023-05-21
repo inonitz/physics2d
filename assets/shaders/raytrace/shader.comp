@@ -189,7 +189,7 @@ vec3 CalculatePixelColor(in CameraTransform camera, in Sphere objects[2], in vec
         /* Get color from intersection data */
         backgroundCol = defaultRayColor(cameraRayAtUV);
         hitColor      = 0.5f * ( possibleHit.normal + 1.0f ); 
-        outColor += mix(backgroundCol, hitColor, !isinf(possibleHit.t));
+        outColor += mix(backgroundCol, hitColor, bvec3( !isinf(possibleHit.t) ));
     }
 
 
