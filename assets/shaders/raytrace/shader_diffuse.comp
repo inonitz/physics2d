@@ -10,6 +10,7 @@ layout(location = 5) uniform int   u_scatterFactor;
 layout(location = 6) uniform float u_scatterBase;
 
 
+/* Using trascendenal constants for fun & profit */
 const float c_infinity = 1. / 0.;
 const float c_pi         = 3.14159265358979323846264338327950288;
 const float c_sqrt2      = 1.41421356237309504880;
@@ -17,7 +18,7 @@ const float c_sqrt3      = 1.73205080756887729352;
 const float c_phi        = 1.61803398874989484820;
 const float c_ramanujan  = 262537412640768743.999999999999250073; /* e^( pi * sqrt(163) )*/
 const float c_atan2      = 0.955316618124509278163;
-const float c_chaitin    = 0.0078749969978123844; /* avg prob that a rand program will halt */
+const float c_chaitin    = 0.0078749969978123844;                 /* avg prob that a rand program will halt */
 const float c_feigenbaum = 2.50290787509589282228;
 
 float degrees_to_radians(float degrees) { return degrees * c_pi / 180.0f; }
