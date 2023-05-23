@@ -50,16 +50,17 @@ struct CameraTransform
 {
 	math::vec3f position;
 	math::vec2f viewport;
-	f32     focal_length;
-	u8      reserved[4];
+	f32         focal_length;
+	u32         reserved;
 };
 
 
 struct alignsz(8) SceneData
 {
 	CameraTransform transform;
-	u32 	        max_length;
-	u32 			curr_length;
+	u32 			max_size; 
+	u32 			curr_size; 
+	u64 			reserved;
 	Sphere 			objects[1];
 };
 

@@ -31,11 +31,11 @@ struct ComputeGroupSizes
 
 inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims);
 inline void renderImGui(
-	i32& 			   out_samples, 
-	i32& 			   recursionDepth, 
-	i32& 			   imgScatteringFactor,
-	f32&               imgScatteringBasePowFactor,
-	math::vec4f const& sample_randf, 
+	i32& 		 out_samples, 
+	i32& 		 recursionDepth, 
+	i32& 		 imgScatteringFactor,
+	f32&         imgScatteringBasePowFactor,
+	math::vec4f& sample_randf, 
 	math::vec3u const& computeDispatchSize
 );
 
@@ -86,11 +86,11 @@ inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims)
 
 
 void renderImGui(
-	i32& 			   out_samples, 
-	i32& 			   recursionDepth, 
-	i32& 			   imgScatteringFactor,
-	f32&               imgScatteringBasePowFactor,
-	math::vec4f const& sample_randf, 
+	i32& 		 out_samples, 
+	i32& 		 recursionDepth, 
+	i32& 		 imgScatteringFactor,
+	f32&         imgScatteringBasePowFactor,
+	math::vec4f& sample_randf, 
 	math::vec3u const& computeDispatchSize
 ) {
 	auto* ctx = getGlobalContext();
@@ -124,7 +124,13 @@ void renderImGui(
 	ImGui::Text("Window Resolution is %ux%u\n", windowDims[0], windowDims[1]);
 	ImGui::Text("Rendering at %.02f Frames Per Second (%.05f ms/frame)", (1.0f / dt), (dt * 1000.0f) );
 	ImGui::Text("Random Float  For Pixel Samples =   %.05f                ", sample_randf.x);
-	ImGui::Text("Random Floats For Rand  Sphere  = { %.05f, %.05f, %.05f }", sample_randf.y, sample_randf.z, sample_randf.w);
+
+	if(ImGui::Button("Refresh =>"))
+		sample_randf = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	ImGui::SameLine();
+	ImGui::Text("Random Vec4: { %.05f, %.05f, %.05f, %.05f }", sample_randf.x, sample_randf.y, sample_randf.z, sample_randf.w);
+
+
 	ImGui::SliderInt("Random Samples Per Pixel ", &out_samples   , 0, 128);
 	ImGui::SliderInt("Diffusion-Recursion Depth", &recursionDepth, 0, 64 );
 	ImGui::SliderInt("Texel Coord Scatter Power Factor", &imgScatteringFactor, -20, 20);

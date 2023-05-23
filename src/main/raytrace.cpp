@@ -17,28 +17,61 @@ int raytracer()
 		glfw_mouse_button_callback
 	};
 	bool running, focused = true, paused = false, changedResolution = false, refresh[3] = { false, false, false };
+	u8  sphereCount = 13;
 	u32 windowWidth = 1280, windowHeight = 720;
 	i32 		uniform_samplesppx     = 1;
 	i32 		uniform_diffRecursion  = 10;
 	i32         uniform_imgScatter     = -10;
 	f32 		uniform_imgScatterBase = 1.5f;
 	math::vec4f uniform_randnum        = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	std::array< std::pair<const char*, u32>, 5> shaderStrings;
+	std::array< std::pair<char*,       u32>, 3> fullShaderPaths;
+
+
+	shaderStrings = {
+		std::make_pair("C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/", 54),
+		std::make_pair("C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/", 85),
+		std::make_pair("shader.vert", 12),
+		std::make_pair("shader.frag", 12),
+		std::make_pair("shader_diffuse.comp", 20)
+	};
+	fullShaderPaths[0] = std::make_pair(__scast(char*, malloc(300)), 100);
+	fullShaderPaths[1] = std::make_pair(fullShaderPaths[0].first + 100, 100);
+	fullShaderPaths[2] = std::make_pair(fullShaderPaths[0].first + 200, 100);
+	for(size_t i = 0; i < 3; ++i) { 
+		// .first  = buffer ptr .second = buffer size
+		memcpy(fullShaderPaths[i].first, shaderStrings[1    ].first, shaderStrings[1    ].second);
+		memcpy(fullShaderPaths[i].first + shaderStrings[1].second, shaderStrings[2 + i].first, shaderStrings[2 + i].second);
+	}
+	debug_messagefmt("Shader paths are: \n%s\n%s\n%s\n", 
+		fullShaderPaths[0].first, 
+		fullShaderPaths[1].first, 
+		fullShaderPaths[2].first
+	);
+
+
 	ComputeGroupSizes invocDims;
 	Program shader, compute;
 	VertexArray   vao;
 	TextureBuffer tex;
 	Buffer vbo, ibo;
-	// SceneData data = {
-	// 	malloc(sizeof(Sphere) * 16),
-	// 	16,
-	// 	2,
-	// 	CameraTransform{
-
-	// 	}
-	// }
+	// SceneData* sceneDescription = nullptr;
 	// ShaderStorageBuffer ssbo;
+
+	// sceneDescription = __scast(SceneData*, malloc( sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ));
+	// sceneDescription->transform = {
+	// 	math::vec3f{ 0.0f, 0.0f, 0.0f },         					  /* Position 				*/
+	// 	math::vec2f{ context->glfw.aspectRatio<f32>() * 2.0f, 2.0f }, /* Viewport Width, height */
+	// 	1.0f,                           							  /* focal length 			*/
+	// 	0                               							  /* reserved 				*/
+	// };
+	// sceneDescription->curr_size = 2;
+	// sceneDescription->max_size  = 13;
+	// sceneDescription->objects[0] = Sphere{ {0.0f,    0.0f, -1.0f, 0.5f  } };
+	// sceneDescription->objects[1] = Sphere{ {0.0f, -100.5f, -1.0f, 100.0f} };
 	
-	
+
+
 
 	/* Init */
     context->glfw.create(windowWidth, windowHeight, eventFuncs);	
@@ -49,27 +82,21 @@ int raytracer()
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
 	glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
 
 
-
-	/*
-		C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/
-		C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/
-	*/
-	invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
-	shader.createFrom({
-		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert", GL_VERTEX_SHADER   },
-		{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag", GL_FRAGMENT_SHADER }
+	shader.createFrom({{ fullShaderPaths[0].first, GL_VERTEX_SHADER   },
+					   { fullShaderPaths[1].first, GL_FRAGMENT_SHADER }
 	});
-	compute.createFrom({
-			{ "C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp", GL_COMPUTE_SHADER },
-	}); compute.resizeLocalWorkGroup(0, invocDims.localGroup);
+	compute.createFrom({{ fullShaderPaths[2].first, GL_COMPUTE_SHADER }}); 
 
+
+	invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
+	compute.resizeLocalWorkGroup(0, invocDims.localGroup);
 	ifcrashdo(shader.compile()  == GL_FALSE, debug_message("Problem Compiling Vertex-Fragment Shader\n"));
 	ifcrashdo(compute.compile() == GL_FALSE, debug_message("Problem Compiling Compute Shader\n")		);
 
@@ -113,6 +140,19 @@ int raytracer()
 	tex.bindToImage(0, TEX_IMAGE_WRITE_ONLY_ACCESS);
 
 
+	// ssbo.create(BufferDescriptor{
+	// 		sceneDescription,
+	// 		__scast(u32, sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ),
+	// 		{{
+	// 			{ GL_UNSIGNED_BYTE, 1 }
+	// 		}}
+	// 	},
+	// 	GL_DYNAMIC_DRAW
+	// );
+	// ssbo.setBindingIndex(1);
+	// ssbo.bind();
+
+
 
 
 	/* Main Loop */
@@ -124,6 +164,7 @@ int raytracer()
         context->glfw.procUpcomingEvents();
 		if(focused)
 		{
+
 			renderImGui(
 				uniform_samplesppx, 
 				uniform_diffRecursion , 
@@ -206,10 +247,12 @@ int raytracer()
 
 	compute.destroy();
 	shader.destroy();
+	// ssbo.destroy();
 	tex.destroy();
 	vbo.destroy();
 	ibo.destroy();
 	context->glfw.destroy();
+	free(fullShaderPaths[0].first);
 	return 0;
 }
 

@@ -10,6 +10,46 @@ layout(location = 5) uniform int   u_scatterFactor;
 layout(location = 6) uniform float u_scatterBase;
 
 
+struct Ray
+{
+    vec3 origin;
+    vec3 dir;
+};
+struct Sphere 
+{ 
+    vec4 pos_radius; 
+};
+struct CameraTransform
+{
+    vec3  position;
+    vec2  viewport;
+    float focal_length; /* Distance from camera origin to camera Screen */
+    uint  reserved;
+};
+
+
+layout(std430, binding=1) buffer SceneData
+{
+    CameraTransform transform;
+    uint            max_objects;
+    uint            curr_length;
+    uint            reserved[2];
+    Sphere          objects[];
+};
+
+
+vec3 rayAt(in Ray ray, in float t) { return ray.origin + ray.dir * t; }
+Ray  cameraGetRay(CameraTransform cam, vec3 rayOrigin, vec2 uv) /* Camera pointing towards -Z axis */
+{
+    vec3 rayDir;
+    rayDir = cam.position - vec3( (vec2(0.5f) - uv) * cam.viewport, cam.focal_length);
+    return Ray(rayOrigin, rayDir);
+}
+
+
+
+
+
 /* Using trascendenal constants for fun & profit */
 const float c_infinity = 1. / 0.;
 const float c_pi         = 3.14159265358979323846264338327950288;
@@ -34,11 +74,15 @@ uint pcg_hash(in uint x)
 }
 
 
-float uintToNormFloat(uint m) { return uintBitsToFloat((m & 0x007FFFFFu) | 0x3F800000u ) - 1.0f; }
 float random( vec2 p )
 {
     const vec2 r = vec2(23.1406926327792690, 2.6651441426902251);
     return fract( cos( mod( 123456789., 1e-7 + 256. * dot(p,r) ) ) );  
+}
+
+
+float uintToNormFloat(uint m) { 
+    return uintBitsToFloat((m & 0x007FFFFFu) | 0x3F800000u ) - 1.0f; 
 }
 
 
@@ -47,73 +91,16 @@ float random_norm(vec2 p) {
 }
 
 
-vec3 randInUnitSphere(in vec2 texelCoord, in uint sampleNum)
-{
-    vec3 randPoint = vec3( float(1 << sampleNum) );
-    randPoint += vec3(
-        texelCoord.yx,
-        random(texelCoord) * c_chaitin
-    );
-    return normalize(vec3(
-        random(randPoint.xy), 
-        random(randPoint.yz), 
-        random(randPoint.zx)
-    ));
-}
-
-
 vec3 simpleRandUnitSphere(in vec2 texelCoord, uint sampleNum)
 {
-    float r = random(texelCoord) * float(1 << sampleNum);
     vec3 r3 = vec3(
-        random(u_dt.xy * c_atan2),
-        random(u_dt.yz * c_feigenbaum), 
-        random(u_dt.zw * c_sqrt3)
-    ) * r;
+        random(  vec2(u_dt.x, random(texelCoord)       )),
+        random(  vec2(u_dt.y, random(vec2(sampleNum))  )), 
+        0
+    );
+    r3.z = random(r3.xy);
     return normalize(r3);
 }
-
-
-struct Ray
-{
-    vec3 origin;
-    vec3 dir;
-};
-vec3 rayAt(in Ray ray, in float t) { return ray.origin + ray.dir * t; }
-
-
-struct Sphere 
-{ 
-    vec4 pos_radius; 
-};
-
-
-
-
-struct CameraTransform
-{
-    vec3  position;
-    vec2  viewport;
-    float focal_length; /* Distance from camera origin to camera Screen */
-    int   reserved;
-};
-Ray cameraGetRay(CameraTransform cam, vec3 rayOrigin, vec2 uv) /* Camera pointing towards -Z axis */
-{
-    vec3 rayDir;
-    rayDir = cam.position - vec3( (vec2(0.5f) - uv) * cam.viewport, cam.focal_length);
-    return Ray(rayOrigin, rayDir);
-}
-
-
-
-
-layout(std430, binding=1) buffer SceneData
-{
-    CameraTransform transform;
-    uint            max_objects;
-    uint            curr_length;
-    Sphere          objects[];
-};
 
 
 
@@ -235,7 +222,7 @@ vec3 CalculatePixelColorDiffuse(in CameraTransform camera, in Sphere objects[2],
             cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
             // cameraRayAtUV.dir    = possibleHit.normal + simpleRandUnitSphere(texelCoord, i); /* fake lambertian */
             /* true lambertian */
-            cameraRayAtUV.dir = randInUnitSphere(texelCoord, i);
+            cameraRayAtUV.dir = simpleRandUnitSphere(texelCoord, i);
             cameraRayAtUV.dir *= mix(-1.0f, 1.0f, dot(cameraRayAtUV.dir, possibleHit.normal) > 0);
         }
     }
@@ -268,13 +255,7 @@ vec3 CalculatePixelColor(
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
 
         // currTexel = texelCoord;
-        // currTexel = texelCoord + vec2(clamp(
-        //     random3f(  vec3(texelCoord, u_dt.x * sampleIdx)  ),
-        //     0.000f,
-        //     0.999f
-        // ) * u_dt.x * pixel_samples_inv);
-        currTexel = texelCoord + vec2(c_powScatterFactor * random_norm(texelCoord));
-
+        currTexel = texelCoord + simpleRandUnitSphere(texelCoord, sampleIdx).xz * pixel_samples_inv * pixel_samples_inv;
         outColor += CalculatePixelColorDiffuse(camera, objects, currTexel);
     }
 
@@ -289,7 +270,7 @@ void main()
     /* Image Output Coordinates (pixel uv coord) */
     ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
     vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
-    vec2  currTexel;
+
 
     /* Output screen data */
     ivec2 windowSize  = imageSize(imageOut);
