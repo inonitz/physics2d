@@ -20,7 +20,11 @@ void TextureBuffer::create(const TextureBufferDescriptor &inf)
 
 void TextureBuffer::destroy()
 {
-	if(id != DEFAULT32) glDeleteTextures(1, &id);
+	if(id != DEFAULT32) { 
+		unbindImage();
+		unbindUnit();
+		glDeleteTextures(1, &id); 
+	}
 	return;
 }
 

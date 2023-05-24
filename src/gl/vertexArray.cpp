@@ -70,6 +70,13 @@ void Buffer::create(BufferDescriptor const& binfo, u32 usage = GL_STATIC_DRAW)
 }
 
 
+void Buffer::update(BufferDescriptor const& updateInfo, u32 byteOffset)
+{
+	glNamedBufferSubData(m_id, byteOffset, updateInfo.count, updateInfo.data);
+	return;
+}
+
+
 void Buffer::destroy() 
 { 
 	glDeleteBuffers(1, &m_id);
@@ -84,6 +91,13 @@ void ShaderStorageBuffer::create(BufferDescriptor const& info, u32 usage)
 {
 	m_base.create(info, usage);
 	m_bindingPoint = DEFAULT32;
+	return;
+}
+
+
+void ShaderStorageBuffer::update(u32 byteOffset, BufferDescriptor const& info)
+{
+	m_base.update(info, byteOffset);
 	return;
 }
 

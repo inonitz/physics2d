@@ -31,6 +31,7 @@ struct ComputeGroupSizes
 
 inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims);
 inline void renderImGui(
+	SceneData*   scene,
 	i32& 		 out_samples, 
 	i32& 		 recursionDepth, 
 	i32& 		 imgScatteringFactor,
@@ -86,6 +87,7 @@ inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims)
 
 
 void renderImGui(
+	SceneData*   scene,
 	i32& 		 out_samples, 
 	i32& 		 recursionDepth, 
 	i32& 		 imgScatteringFactor,
@@ -133,6 +135,7 @@ void renderImGui(
 
 	ImGui::SliderInt("Random Samples Per Pixel ", &out_samples   , 0, 128);
 	ImGui::SliderInt("Diffusion-Recursion Depth", &recursionDepth, 0, 64 );
+	ImGui::SliderFloat("Camera Viewport Length", &scene->transform.viewport.y, 0.0f, 10.0f);
 	ImGui::SliderInt("Texel Coord Scatter Power Factor", &imgScatteringFactor, -20, 20);
 	ImGui::InputFloat("Texel Coord Scatter Base Factor", &imgScatteringBasePowFactor, .1f, 0.0f, "%.05f");
 	ImGui::EndGroup();

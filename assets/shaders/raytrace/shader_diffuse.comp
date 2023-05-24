@@ -30,11 +30,11 @@ struct CameraTransform
 
 layout(std430, binding=1) buffer SceneData
 {
-    CameraTransform transform;
-    uint            max_objects;
-    uint            curr_length;
+    CameraTransform sceneCameraTransform;
+    uint            sceneObjMaxLength;
+    uint            sceneObjCurrLength;
     uint            reserved[2];
-    Sphere          objects[];
+    Sphere          sceneObject[];
 };
 
 
@@ -162,7 +162,6 @@ void intersection(
 
 
 void worldRayIntersection(
-    in  Sphere objects[2], 
     in  Ray ray, 
     out SphereRayIntersectionResult result
 ) {    
@@ -172,11 +171,11 @@ void worldRayIntersection(
 
     min_result.t      = c_infinity;
     min_result.normal = vec3(0.0f);
-    for(int i = 0; i < 2; ++i)
+    for(int i = 0; i < sceneObjCurrLength; ++i)
     {
-        intersection(ray, objects[i], t_limits, curr_result);
+        intersection(ray, sceneObject[i], t_limits, curr_result);
         // if(isinf(curr_result.t)) 
-        //     continue; /* considering we don't have hundreds of objects, this should be fine without the conditional */
+        //     continue; /* considering we don't have hundreds of sceneObject, this should be fine without the conditional */
 
         
         if(curr_result.t < t_limits.y) {
@@ -202,25 +201,26 @@ vec3 defaultRayColor(in Ray ray)
 
 
 
-vec3 CalculatePixelColorDiffuse(in CameraTransform camera, in Sphere objects[2], in vec2 texelCoord)
+vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
 {
     SphereRayIntersectionResult possibleHit;
-    Ray cameraRayAtUV;
+    Ray  cameraRayAtUV;
     vec3 returnedColor;
     uint mulHalf = 0;
     int  i       = 0;
     bool cont    = true;
 
 
-    cameraRayAtUV = cameraGetRay(camera, camera.position, texelCoord);
+    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
     for(; i < u_recurseDepth && cont; ++i)
     {
-        worldRayIntersection(objects, cameraRayAtUV, possibleHit);
+        worldRayIntersection(cameraRayAtUV, possibleHit);
         cont = !isinf(possibleHit.t);
         if(cont) {
             ++mulHalf;
             cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
             // cameraRayAtUV.dir    = possibleHit.normal + simpleRandUnitSphere(texelCoord, i); /* fake lambertian */
+            
             /* true lambertian */
             cameraRayAtUV.dir = simpleRandUnitSphere(texelCoord, i);
             cameraRayAtUV.dir *= mix(-1.0f, 1.0f, dot(cameraRayAtUV.dir, possibleHit.normal) > 0);
@@ -238,27 +238,20 @@ vec3 CalculatePixelColorDiffuse(in CameraTransform camera, in Sphere objects[2],
 
 
 
-vec3 CalculatePixelColor(
-    in CameraTransform camera, 
-    in Sphere          objects[2], 
-    in vec2            texelCoord
-) {
+vec3 CalculatePixelColor(in vec2 texelCoord) 
+{
     SphereRayIntersectionResult possibleHit;
     vec3 outColor = vec3(0.0f);
     Ray  cameraRayAtUV;
     vec2 currTexel;
     const float pixel_samples_inv = 1.0f / float(u_samplesPpx);
-    const float c_powScatterFactor = pow(u_scatterBase, u_scatterFactor);
+    const float c_powScatterFactor = pow(u_scatterBase, u_scatterFactor); /* might get rid of, doesn't achieve desired results */
 
 
-    /* for(uint sampleIdx = 0; sampleIdx < 1; ++sampleIdx) {} */
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
-
-        // currTexel = texelCoord;
         currTexel = texelCoord + simpleRandUnitSphere(texelCoord, sampleIdx).xz * pixel_samples_inv * pixel_samples_inv;
-        outColor += CalculatePixelColorDiffuse(camera, objects, currTexel);
+        outColor += CalculatePixelColorDiffuse(currTexel);
     }
-
 
     outColor *= pixel_samples_inv; /* Get Average over All Samples */
     return outColor;
@@ -267,41 +260,18 @@ vec3 CalculatePixelColor(
 
 void main()
 {
-    /* Image Output Coordinates (pixel uv coord) */
-    ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
-    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy);
-
-
-    /* Output screen data */
-    ivec2 windowSize  = imageSize(imageOut);
-    float aspectRatio = float(windowSize.x) / float(windowSize.y);
-
     /* intermediates for calculations */
     vec3 finalColor = vec3(0.0f);
 
+    /* Image Output Coordinates (pixel uv coord) */
+    ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
+    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
 
-    // if(texelCoord.y + texelCoord.x * windowSize.x >= windowSize.x * windowSize.y) {
-    //     return;
-    // }
 
-    CameraTransform camera = CameraTransform( /* in reality this would change its data on a resize of the window, which will be updated in the ssbo. */
-        vec3(0.0f, 0.0f, 0.0f),         /* Position */
-        vec2(aspectRatio * 2.0f, 2.0f), /* Viewport Width, height */
-        1.0f,                           /* focal length */
-        0                               /* reserved */
+    finalColor = pow( /* gamma correction */
+        CalculatePixelColor(texelCoordf),
+        vec3(0.45454545453f)
     );
-
-
-    Sphere objects[2] = {
-        Sphere(vec4(0.0f, 0.0f,    -1.0f, 0.5f  )),
-        Sphere(vec4(0.0f, -100.5f, -1.0f, 100.0f))
-    };
-
-
-    texelCoord  = ivec2(gl_GlobalInvocationID.xy);
-    texelCoordf = vec2(gl_GlobalInvocationID.xy) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
-    finalColor = CalculatePixelColor(camera, objects, texelCoordf);
-    finalColor = pow(finalColor, vec3(1.0f/2.2f));
     imageStore(imageOut, texelCoord, vec4(finalColor, 1.0f));
     return;
 }

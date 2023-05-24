@@ -43,7 +43,8 @@ struct Buffer
 public:
 	Buffer() = default;
 	
-	void create(BufferDescriptor const& info, u32 usage);
+	void create(BufferDescriptor const& info, 		u32 usage);
+	void update(BufferDescriptor const& updateInfo, u32 byteOffset); /* [NOTE]: vinfo is unused, as there is no purpose for it. */
 	void destroy();
 
 
@@ -61,6 +62,7 @@ struct ShaderStorageBuffer
 {
 public:
 	void create(BufferDescriptor const& info, u32 usage);
+	void update(u32 byteOffset, BufferDescriptor const& info);
 	void destroy();
 
 

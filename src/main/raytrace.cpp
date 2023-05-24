@@ -23,6 +23,7 @@ int raytracer()
 	i32 		uniform_diffRecursion  = 10;
 	i32         uniform_imgScatter     = -10;
 	f32 		uniform_imgScatterBase = 1.5f;
+	f32         camViewportWidth;
 	math::vec4f uniform_randnum        = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
 	std::array< std::pair<const char*, u32>, 5> shaderStrings;
 	std::array< std::pair<char*,       u32>, 3> fullShaderPaths;
@@ -55,20 +56,20 @@ int raytracer()
 	VertexArray   vao;
 	TextureBuffer tex;
 	Buffer vbo, ibo;
-	// SceneData* sceneDescription = nullptr;
-	// ShaderStorageBuffer ssbo;
+	SceneData* sceneDescription = nullptr;
+	ShaderStorageBuffer ssbo;
 
-	// sceneDescription = __scast(SceneData*, malloc( sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ));
-	// sceneDescription->transform = {
-	// 	math::vec3f{ 0.0f, 0.0f, 0.0f },         					  /* Position 				*/
-	// 	math::vec2f{ context->glfw.aspectRatio<f32>() * 2.0f, 2.0f }, /* Viewport Width, height */
-	// 	1.0f,                           							  /* focal length 			*/
-	// 	0                               							  /* reserved 				*/
-	// };
-	// sceneDescription->curr_size = 2;
-	// sceneDescription->max_size  = 13;
-	// sceneDescription->objects[0] = Sphere{ {0.0f,    0.0f, -1.0f, 0.5f  } };
-	// sceneDescription->objects[1] = Sphere{ {0.0f, -100.5f, -1.0f, 100.0f} };
+	sceneDescription = __scast(SceneData*, malloc( sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ));
+	sceneDescription->transform = {
+		math::vec3f{ 0.0f, 0.0f, 0.0f },         					  /* Position 				*/
+		math::vec2f{ context->glfw.aspectRatio<f32>() * 2.0f, 2.0f }, /* Viewport Width, height */
+		1.0f,                           							  /* focal length 			*/
+		0                               							  /* reserved 				*/
+	};
+	sceneDescription->curr_size = 2;
+	sceneDescription->max_size  = 13;
+	sceneDescription->objects[0] = Sphere{ {0.0f,    0.0f, -1.0f, 0.5f  } };
+	sceneDescription->objects[1] = Sphere{ {0.0f, -100.5f, -1.0f, 100.0f} };
 	
 
 
@@ -140,17 +141,18 @@ int raytracer()
 	tex.bindToImage(0, TEX_IMAGE_WRITE_ONLY_ACCESS);
 
 
-	// ssbo.create(BufferDescriptor{
-	// 		sceneDescription,
-	// 		__scast(u32, sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ),
-	// 		{{
-	// 			{ GL_UNSIGNED_BYTE, 1 }
-	// 		}}
-	// 	},
-	// 	GL_DYNAMIC_DRAW
-	// );
-	// ssbo.setBindingIndex(1);
-	// ssbo.bind();
+	sceneDescription->transform.viewport.x = context->glfw.aspectRatio<f32>() * 2.0f;
+	ssbo.create(BufferDescriptor{
+			sceneDescription,
+			__scast(u32, sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere) ),
+			{{
+				{ GL_UNSIGNED_BYTE, 1 }
+			}}
+		},
+		GL_DYNAMIC_DRAW
+	);
+	ssbo.setBindingIndex(1);
+	ssbo.bind();
 
 
 
@@ -164,8 +166,8 @@ int raytracer()
         context->glfw.procUpcomingEvents();
 		if(focused)
 		{
-
 			renderImGui(
+				sceneDescription,
 				uniform_samplesppx, 
 				uniform_diffRecursion , 
 				uniform_imgScatter,
@@ -176,8 +178,8 @@ int raytracer()
 			if(!paused)
 			{
 				/* Compute Shader Pass Here */
-				// uniform_randnum = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
 				compute.bind();
+				ssbo.bind();
 				compute.uniform4fv("u_dt"         , uniform_randnum.begin());
 				compute.uniform1i("u_samplesPpx"  , uniform_samplesppx     );
 				compute.uniform1i("u_recurseDepth", uniform_diffRecursion  );
@@ -225,6 +227,16 @@ int raytracer()
 				tex.bindToUnit(0);
 				tex.bindToImage(0, TEX_IMAGE_WRITE_ONLY_ACCESS);
 
+
+				camViewportWidth = context->persp.__.aspectRatio * sceneDescription->transform.viewport.y;
+				ssbo.bind();
+				ssbo.update(offsetof(CameraTransform, viewport.x), { 
+					&camViewportWidth,
+					4,
+					{}
+				});
+				ssbo.unbind();
+
 				invocDims = recomputeDispatchSize({ windowWidth, windowHeight });
 			}
 		}
@@ -247,7 +259,8 @@ int raytracer()
 
 	compute.destroy();
 	shader.destroy();
-	// ssbo.destroy();
+
+	ssbo.destroy();
 	tex.destroy();
 	vbo.destroy();
 	ibo.destroy();
@@ -255,7 +268,6 @@ int raytracer()
 	free(fullShaderPaths[0].first);
 	return 0;
 }
-
 
 
 /*
