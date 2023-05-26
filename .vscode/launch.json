@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+    
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debugger - Active Project [Debug]",
+            "program": "${workspaceFolder}/build/debug/bin/mglw.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceLanguages": [ "C++", "C" ],
+            "terminal": "integrated",
+            "stopOnEntry" : true
+        }
+    ]
+}

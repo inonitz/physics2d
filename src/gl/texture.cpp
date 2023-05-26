@@ -7,12 +7,6 @@
 void TextureBuffer::create(const TextureBufferDescriptor &inf)
 {
 	info = inf;
-
-
-	glCreateTextures(GL_TEXTURE_2D, 1, &id);
-	for(auto& param_pair : info.parameters) {
-		glTextureParameteri(id, param_pair.name, param_pair.val);
-	}
 	recreateImage(inf.dims);
 	return;
 }
@@ -50,7 +44,7 @@ void TextureBuffer::bindToUnit(u32 textureUnit)
 
 void TextureBuffer::unbindImage()
 {
-	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+	glBindImageTexture(imageUnit, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 	imageUnit = DEFAULT32;
 	return;
 }
@@ -58,19 +52,39 @@ void TextureBuffer::unbindImage()
 
 void TextureBuffer::unbindUnit()
 {
-	glBindTextureUnit(0, 0);
+	glBindTextureUnit(bindingUnit, 0);
 	bindingUnit = DEFAULT32;
 	return;
 }
 
 
+// void TextureBuffer::recreateImage(math::vec2u newDims)
+// {
+// 	info.dims = newDims;
+// 	glBindTexture(GL_TEXTURE_2D, id);
+// 	glTexImage2D(
+// 		GL_TEXTURE_2D, 
+// 		0, 
+// 		info.format.internalFmt, 
+// 		info.dims.x, 
+// 		info.dims.y, 
+// 		0, 
+// 		info.format.layout, 
+// 		info.format.gltype, 
+// 		nullptr
+// 	);
+// 	glBindTexture(GL_TEXTURE_2D, 0);
+// 	return;
+// }
+
+
 void TextureBuffer::recreateImage(math::vec2u newDims)
 {
-	info.dims = newDims;
-	unbindImage();
-	unbindUnit();
-
-
+	destroy();
+	glCreateTextures(GL_TEXTURE_2D, 1, &id);
+	for(auto& param_pair : info.parameters) {
+		glTextureParameteri(id, param_pair.name, param_pair.val);
+	}
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexImage2D(
 		GL_TEXTURE_2D,
@@ -84,5 +98,6 @@ void TextureBuffer::recreateImage(math::vec2u newDims)
 		info.data
 	);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	info.dims = newDims;
 	return;
 }

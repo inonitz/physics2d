@@ -10,10 +10,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/glad/glad_c.o",
             "src/include/glad/glad.c"
@@ -33,33 +33,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
-            "-o",
-            "build/debug/obj/base_cpp.o",
-            "src/base.cpp"
-        ],
-        "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/base.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/base_cpp.o"
-    },
-    {
-        "arguments": [
-            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
-            "-std=c++17",
-            "-c",
-            "-pedantic",
-            "-Werror",
-            "-Wall",
-            "-Wextra",
-            "-march=native",
-            "-mtune=native",
-            "-g",
-            "-O1",
-            "-D_DEBUG",
-            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/callbackHooks_cpp.o",
             "src/callbackHooks.cpp"
@@ -79,10 +56,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/camera_cpp.o",
             "src/camera.cpp"
@@ -102,10 +79,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/context_cpp.o",
             "src/context.cpp"
@@ -125,17 +102,17 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
-            "build/debug/obj/file_cpp.o",
-            "src/file.cpp"
+            "build/debug/obj/gl/shader2_cpp.o",
+            "src/gl/shader2.cpp"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/file.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/file_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/gl/shader2.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/gl/shader2_cpp.o"
     },
     {
         "arguments": [
@@ -148,10 +125,56 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
+            "-o",
+            "build/debug/obj/gl/texture_cpp.o",
+            "src/gl/texture.cpp"
+        ],
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/gl/texture.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/gl/texture_cpp.o"
+    },
+    {
+        "arguments": [
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
+            "-std=c++17",
+            "-c",
+            "-pedantic",
+            "-Werror",
+            "-Wall",
+            "-Wextra",
+            "-march=native",
+            "-mtune=native",
+            "-Og",
+            "-D_DEBUG",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
+            "-o",
+            "build/debug/obj/gl/vertexArray_cpp.o",
+            "src/gl/vertexArray.cpp"
+        ],
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/gl/vertexArray.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/gl/vertexArray_cpp.o"
+    },
+    {
+        "arguments": [
+            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
+            "-std=c++17",
+            "-c",
+            "-pedantic",
+            "-Werror",
+            "-Wall",
+            "-Wextra",
+            "-march=native",
+            "-mtune=native",
+            "-Og",
+            "-D_DEBUG",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_cpp.o",
             "src/include/ImGui/imgui.cpp"
@@ -171,10 +194,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_draw_cpp.o",
             "src/include/ImGui/imgui_draw.cpp"
@@ -194,10 +217,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o",
             "src/include/ImGui/imgui_impl_glfw.cpp"
@@ -217,10 +240,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o",
             "src/include/ImGui/imgui_impl_opengl3.cpp"
@@ -240,10 +263,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_tables_cpp.o",
             "src/include/ImGui/imgui_tables.cpp"
@@ -263,10 +286,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/ImGui/imgui_widgets_cpp.o",
             "src/include/ImGui/imgui_widgets.cpp"
@@ -286,10 +309,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/glm/detail/glm_cpp.o",
             "src/include/glm/detail/glm.cpp"
@@ -309,10 +332,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/include/stb_image/stb_image_cpp.o",
             "src/include/stb_image/stb_image.cpp"
@@ -332,17 +355,17 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
-            "build/debug/obj/main/basicpp_cpp.o",
-            "src/main/basicpp.cpp"
+            "build/debug/obj/main/main_cpp.o",
+            "src/main/main.cpp"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/main/basicpp.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/basicpp_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/main/main.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/main_cpp.o"
     },
     {
         "arguments": [
@@ -355,17 +378,17 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
-            "build/debug/obj/main/example_cpp.o",
-            "src/main/example.cpp"
+            "build/debug/obj/main/raytrace_cpp.o",
+            "src/main/raytrace.cpp"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/main/example.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/example_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/main/raytrace.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/raytrace_cpp.o"
     },
     {
         "arguments": [
@@ -378,17 +401,17 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
-            "build/debug/obj/main/test_cpp.o",
-            "src/main/test.cpp"
+            "build/debug/obj/util/base_cpp.o",
+            "src/util/base.cpp"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/main/test.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main/test_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/util/base.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/util/base_cpp.o"
     },
     {
         "arguments": [
@@ -401,17 +424,17 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
-            "build/debug/obj/main_cpp.o",
-            "src/main.cpp"
+            "build/debug/obj/util/file_cpp.o",
+            "src/util/file.cpp"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/main.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/main_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/util/file.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/util/file_cpp.o"
     },
     {
         "arguments": [
@@ -424,33 +447,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
-            "-o",
-            "build/debug/obj/shader_cpp.o",
-            "src/shader.cpp"
-        ],
-        "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/shader.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/shader_cpp.o"
-    },
-    {
-        "arguments": [
-            "\"C:/CTools/mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
-            "-std=c++17",
-            "-c",
-            "-pedantic",
-            "-Werror",
-            "-Wall",
-            "-Wextra",
-            "-march=native",
-            "-mtune=native",
-            "-g",
-            "-O1",
-            "-D_DEBUG",
-            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/vec_cpp.o",
             "src/vec.cpp"
@@ -470,10 +470,10 @@
             "-Wextra",
             "-march=native",
             "-mtune=native",
-            "-g",
-            "-O1",
+            "-Og",
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "-o",
             "build/debug/obj/window_cpp.o",
             "src/window.cpp"

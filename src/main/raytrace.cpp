@@ -19,7 +19,7 @@ int raytracer()
 	bool running, focused = true, paused = false, changedResolution = false, refresh[3] = { false, false, false };
 	u8  sphereCount = 13;
 	u32 windowWidth = 1280, windowHeight = 720;
-	i32 		uniform_samplesppx     = 1;
+	i32 		uniform_samplesppx     = 50;
 	i32 		uniform_diffRecursion  = 10;
 	i32         uniform_imgScatter     = -10;
 	f32 		uniform_imgScatterBase = 1.5f;
@@ -28,7 +28,7 @@ int raytracer()
 	std::array< std::pair<const char*, u32>, 5> shaderStrings;
 	std::array< std::pair<char*,       u32>, 3> fullShaderPaths;
 
-
+	u8 shaderPathPrependIdx = 0;
 	shaderStrings = {
 		std::make_pair("C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/", 54),
 		std::make_pair("C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/", 85),
@@ -41,8 +41,8 @@ int raytracer()
 	fullShaderPaths[2] = std::make_pair(fullShaderPaths[0].first + 200, 100);
 	for(size_t i = 0; i < 3; ++i) { 
 		// .first  = buffer ptr .second = buffer size
-		memcpy(fullShaderPaths[i].first, shaderStrings[1    ].first, shaderStrings[1    ].second);
-		memcpy(fullShaderPaths[i].first + shaderStrings[1].second, shaderStrings[2 + i].first, shaderStrings[2 + i].second);
+		memcpy(fullShaderPaths[i].first,                                              shaderStrings[shaderPathPrependIdx].first, shaderStrings[shaderPathPrependIdx].second);
+		memcpy(fullShaderPaths[i].first + shaderStrings[shaderPathPrependIdx].second, shaderStrings[2 + i].first, 				shaderStrings[2 + i].second				  );
 	}
 	debug_messagefmt("Shader paths are: \n%s\n%s\n%s\n", 
 		fullShaderPaths[0].first, 
@@ -83,8 +83,8 @@ int raytracer()
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
 	glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
@@ -153,7 +153,6 @@ int raytracer()
 	);
 	ssbo.setBindingIndex(1);
 	ssbo.bind();
-
 
 
 
@@ -266,6 +265,7 @@ int raytracer()
 	ibo.destroy();
 	context->glfw.destroy();
 	free(fullShaderPaths[0].first);
+	free(sceneDescription);
 	return 0;
 }
 

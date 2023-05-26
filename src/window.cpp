@@ -17,6 +17,7 @@ void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	debug(glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT , GL_TRUE));
 	glfwWindowHint(GLFW_DOUBLEBUFFER , 1);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_STENCIL_BITS, 8);

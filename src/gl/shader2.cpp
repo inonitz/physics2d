@@ -136,7 +136,7 @@ bool Program::compile()
             sources[i].data(),
             sources[i].size()
         };
-        // debug_messagefmt("Loading shader [%s/%u ]with Buffer %p [%llu bytes]\nSource:\n%s\n", shaderTypeToString(shaders[i].type), shaders.size(), populate.data, populate.size, sources[i].data());
+        // debug_messagefmt("Loading shader [%s/%u ] with Buffer %p [%llu bytes]\nSource:\n%s\n", shaderTypeToString(shaders[i].type), shaders.size(), populate.data, populate.size, sources[i].data());
         successStatus = successStatus && loadShader(shaders[i], populate); 
     }
     /* Shader Compile stage End. */
@@ -158,14 +158,11 @@ bool Program::compile()
         glDeleteProgram(m_id);
     }
     m_id = glCreateProgram();
-    
-
-    for(size_t i = 0; i < shaders.size(); ++i) {
-        glAttachShader(m_id, shaders[i].id);
-    }
+    for(size_t i = 0; i < shaders.size(); ++i) { glAttachShader(m_id, shaders[i].id); }
     glLinkProgram(m_id);
     /* Shader Program Creation Stage End. */
 
+    
     /* Error Checking For Program Stage */
     glGetProgramiv(m_id, GL_LINK_STATUS, &successStatus);
     if(!successStatus) 
