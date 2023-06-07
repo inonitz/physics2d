@@ -96,7 +96,7 @@
     
     "files.exclude": {
         "**/.ignore" : true,
-        "old/**" : true,
+        "old/**" : true
     },
     "files.watcherExclude": {
         "**/.git/objects/**": true,
@@ -112,21 +112,22 @@
     "C_Cpp.enhancedColorization": "Enabled",
     "C_Cpp.errorSquiggles": "Enabled",
     "clangd.arguments": [
-        "--query-driver=C:/CTools/mingw64-msvcrt/bin/x86_64-w64-mingw32-g++",
-        // "--query-driver=C:/Program Files/Programming Utillities/mingw-ucrt/bin/x86_64-w64-mingw32-g++",
+        "--query-driver=${env:MINGW_W64_COMPILER_BASE}/bin/x86_64-w64-mingw32-g++",
         // "--log=verbose",
         "-pretty",
         "--compile-commands-dir=.vscode",
-        "--background-index",
+        "--background-index"
     ],
     "clangd.fallbackFlags": [ 
         "--target=x86_64-w64-windows-gnu",
         "-std=c++17",
-        "--include-directory=C:/CTools/mingw64-msvcrt/include/c++/v1",
-        // "--include-directory=C:/Program Files/Programming Utillities/mingw-ucrt/include/c++/v1",
+        "--include-directory=${env:MINGW_W64_COMPILER_BASE}/include/c++/v1",
         "--include-directory=${workspaceFolder}/src/include",
         "--include-directory=${workspaceFolder}/src",
-        "-D_DEBUG",
-    ],
+        "-D_DEBUG"
+    ]
+    // "--query-driver=C:/Program Files/Programming Utillities/mingw-ucrt/bin/x86_64-w64-mingw32-g++",
+    // // "--query-driver=C:/CTools/mingw64-msvcrt/bin/x86_64-w64-mingw32-g++",
+    // "--include-directory=C:/CTools/mingw64-msvcrt/include/c++/v1",
     // "python.analysis.typeCheckingMode": "basic"
 }

@@ -28,7 +28,7 @@ int raytracer()
 	std::array< std::pair<const char*, u32>, 5> shaderStrings;
 	std::array< std::pair<char*,       u32>, 3> fullShaderPaths;
 
-	u8 shaderPathPrependIdx = 0;
+	u8 shaderPathPrependIdx = 1;
 	shaderStrings = {
 		std::make_pair("C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/", 54),
 		std::make_pair("C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/", 85),

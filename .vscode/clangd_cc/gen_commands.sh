@@ -68,7 +68,7 @@ function compile() {
 function record_build() {
 	# echo ${MAKE_COMMAND} ${MAKE_CONFIG}
 	# echo ${SCRIPT_ABS_PATH}
-	python "${SCRIPT_ABS_PATH}"/compile_commands.py --out="${COMMANDS_ABSOLUTE_FILENAME}" --exec="${MAKE_COMMAND} ${MAKE_CONFIG}"
+	python "${SCRIPT_ABS_PATH}"/compile_comms.py --out="${COMMANDS_ABSOLUTE_FILENAME}" --exec="${MAKE_COMMAND} ${MAKE_CONFIG}"
 	# python3 /cygdrive/c/"Program Files/Programming Utillities"/Cygwin${SCRIPT_PATH}/compile_commands.py --out=${COMMANDS_ABSOLUTE_FILENAME} --exec=${tmp}
 }
 
