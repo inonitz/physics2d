@@ -1,4 +1,5 @@
 #pragma once
+#define GLFW_DLL
 #include "util/base.hpp"
 #include <GLFW/glfw3.h>
 #include "callbackHooks.hpp"

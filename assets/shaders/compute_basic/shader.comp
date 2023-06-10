@@ -1,6 +1,8 @@
 #version 460 core
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in; /* This shader is run per pixel. */
-layout(rgba32f, binding = 0) writeonly restrict uniform image2D imageOut;
+layout (local_size_x =    , local_size_y =    , local_size_z =    ) in;
+layout(rgba32f, binding = 1) writeonly restrict uniform image2D imageOut;
+
+
 
 
 void main()
@@ -13,5 +15,5 @@ void main()
         1.0f
     );
 
-    imageStore(imageOut, texelCoord, value);
+    imageStore(imageOut, texelCoord, vec4(1.0f, 1.0f, 0.0f, 1.0f));
 }

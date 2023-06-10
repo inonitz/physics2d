@@ -1,8 +1,4 @@
 #include "texwork.hpp"
-#include <glad/glad.h>
-#include <ImGui/imgui.h>
-#include <string.h>
-#include "context.hpp"
 #include "gl/shader2.hpp"
 #include "gl/vertexArray.hpp"
 #include "gl/texture.hpp"
@@ -10,145 +6,9 @@
 
 
 
-void setupShaderPaths(std::array<char*, 3>& fullShaderNames)
-{
-	const char* shaderPath[2] = { "C:/CTools/Projects/mglw-strip/assets/shaders/compute_basic/", "C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/compute_basic/" };
-	const char* shaderName[3] = { "shader.vert", "shader.frag", "shader.comp" };
-	size_t 		stringLengths[5] = { 
-		strlen(shaderPath[0]),
-		strlen(shaderPath[1]),
-		strlen(shaderName[0]),
-		strlen(shaderName[1]),
-		strlen(shaderName[2])
-	};
-	char* stringArray = (char*)malloc(stringLengths[0] + stringLengths[1] + stringLengths[2] + stringLengths[3] + stringLengths[4]);
-	char* ptrOffset   = stringArray;
-
-
-	u8 selectShaderPath = 1;
-	for(size_t i = 0; i < 3; ++i) {
-		fullShaderNames[i] = ptrOffset;
-		memcpy(ptrOffset, shaderPath[selectShaderPath], stringLengths[selectShaderPath]);
-		ptrOffset += stringLengths[selectShaderPath];
-		memcpy(ptrOffset, shaderName[i], stringLengths[2 + i] + 1);
-		ptrOffset += stringLengths[2 + i] + 1; /* +1 because I want to include null-terminator when moving to new shaderName. */
-	}
-	debug_messagefmt("Shader paths are: \n%s\n%s\n%s\n", 
-		fullShaderNames[0], 
-		fullShaderNames[1], 
-		fullShaderNames[2]
-	);
-
-
-	return; /* use fullShaderNames[0] to de-alloc the block-of-memory */
-}
-
-
-
-
-struct ComputeGroupSizes
-{
-	math::vec3u localGroup;
-	math::vec3u dispatchGroup;
-};
-
-
-ComputeGroupSizes computeDispatchSize(math::vec2u const& dims)
-{
-	math::vec3u localWorkgroupSize{32, 1, 1};
-	i32 		max_group_invoc;
-	math::vec2f tmp_cvt, tmp_cvt1;
-
-
-	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &max_group_invoc);
-	tmp_cvt.x = __scast(f32, max_group_invoc);       /* max_invoc */
-	tmp_cvt.y = __scast(f32, localWorkgroupSize.x);  /* width of local workgroup, starting at 32 because most gpus will be ok with this as their starting subgroup size */
-	tmp_cvt.x /= tmp_cvt.y; 				        /* height of local workgroup */
-	tmp_cvt.x = std::ceil(tmp_cvt.x); 	    /* get ceiling of division */
-	localWorkgroupSize.y = __scast( u32, tmp_cvt.x );
-
-	tmp_cvt.x = __scast(f32, dims.x);
-	tmp_cvt.y = __scast(f32, dims.y);
-	tmp_cvt1.x = __scast(f32, localWorkgroupSize.x);
-	tmp_cvt1.y = __scast(f32, localWorkgroupSize.y);
-	tmp_cvt = tmp_cvt / tmp_cvt1;
-	tmp_cvt.x = std::ceil(tmp_cvt.x);
-	tmp_cvt.y = std::ceil(tmp_cvt.y);
-
-	debug_messagefmt("recomputeDispatchSize:\n    Local workgroup Size of { %u %u %u }\n    Workgroup Dispatch Size { %u %u %u }\n", 
-		localWorkgroupSize.x, localWorkgroupSize.y, 1,
-		(u32)tmp_cvt.x, 	  (u32)tmp_cvt.y, 1
-	);
-	
-	
-	return ComputeGroupSizes{
-		localWorkgroupSize,
-		{ __scast(u32, tmp_cvt.x), __scast(u32, tmp_cvt.y), 1u }
-	};
-}
-
-
-void renderUI(math::vec3u const& computeDispatchSize)
-{
-	auto* ctx = getGlobalContext();
-	std::array<i32, 2> windowDims = ctx->glfw.dims;
-	i32 work_grp_inf[7];
-	f32 dt = ctx->glfw.time_dt();
-
-
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0,  &work_grp_inf[0]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1,  &work_grp_inf[1]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2,  &work_grp_inf[2]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0,   &work_grp_inf[3]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1,   &work_grp_inf[4]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2,   &work_grp_inf[5]);
-	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inf[6]);
-	
-	
-	ImGui::BeginGroup();
-	ImGui::BulletText("Currently Using GPU Vendor %s Model %s\n", glad_glGetString(GL_VENDOR), glad_glGetString(GL_RENDERER));
-	ImGui::BulletText("Max work-groups per compute shader: { %10d, %10d, %10d }\n", work_grp_inf[0], work_grp_inf[1], work_grp_inf[2]);
-	ImGui::BulletText("Max work group size:                { %10d, %10d, %10d }\n", work_grp_inf[3], work_grp_inf[4], work_grp_inf[5]);
-	ImGui::BulletText("Max invocations per work group: %d\n", work_grp_inf[6]);
-	ImGui::BulletText("Compute Shader Invoked with %d * %d * %d (%d) Compute Groups\n", 
-		computeDispatchSize.x, 
-		computeDispatchSize.y, 
-		1, 
-		computeDispatchSize.x * computeDispatchSize.y
-	);
-	ImGui::EndGroup();
-	ImGui::BeginGroup();
-	ImGui::Text("Window Resolution is %ux%u\n", windowDims[0], windowDims[1]);
-	ImGui::Text("Rendering at %.02f Frames Per Second (%.05f ms/frame)", (1.0f / dt), (dt * 1000.0f) );
-	ImGui::EndGroup();
-	return;
-}
-
-
-
-
-std::vector<f32> vboData =
-{
-	-1.0f, -1.0f , 0.0f, 0.0f, 0.0f,
-	-1.0f,  1.0f , 0.0f, 0.0f, 1.0f,
-	 1.0f,  1.0f , 0.0f, 1.0f, 1.0f,
-	 1.0f, -1.0f , 0.0f, 1.0f, 0.0f,
-};
-
-std::vector<u32> iboData =
-{
-	0, 2, 1,
-	0, 3, 2
-};
-
-
-
-
 int make_texture_resize_work()
 {
     auto* ctx = getGlobalContext();
-	std::array<char*, 3> shaderFiles;
-	u32 w = 1280, h = 720;
 	defaultCallbacks eventFuncs = {
 		glfw_error_callback,
 		glfw_framebuffer_size_callback,
@@ -156,28 +16,74 @@ int make_texture_resize_work()
 		glfw_cursor_position_callback,
 		glfw_mouse_button_callback
 	};
+	std::vector<f32> vboData =
+	{
+		-1.0f, -1.0f , 0.0f, 0.0f, 0.0f,
+		-1.0f,  1.0f , 0.0f, 0.0f, 1.0f,
+		1.0f,  1.0f , 0.0f, 1.0f, 1.0f,
+		1.0f, -1.0f , 0.0f, 1.0f, 0.0f,
+	};
+
+	std::vector<u32> iboData =
+	{
+		0, 2, 1,
+		0, 3, 2
+	};
+	u64 temporary;
+	u32 w = 1280, h = 720;
+	u8  sphereCount = 13;
+	f32 viewportSize = 2.0f;
+	i32 samplesPerPixel       = 40;
+	i32 diffuseRecursionDepth = 8;
+	math::vec4f randomNorm = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	std::array<const char*, 3> shaderFiles = {
+		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert",
+		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag",
+		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp"
+	};
     Program basic_shader, basic_compute;
+	ShaderStorageBuffer ssbo;
     VertexArray vao;
     Buffer      vbo, ibo;
     TextureBuffer     texbuf;
+	SceneData*        sceneDescription = nullptr;
     ComputeGroupSizes invocDims;
-    bool programStates[5] = {false, false, false, false, true };
+	boolStates 		  programStates;
+	memset(&programStates, 0x00, sizeof(programStates.s));
+
+
+	temporary = sizeof(SceneData) + (sphereCount - 1) * sizeof(Sphere);
+	sceneDescription = __scast(SceneData*, malloc(temporary));
+	sceneDescription->transform = {
+		math::vec3f{ 0.0f },
+		math::vec2f{ 0.0f },
+		1.0f, 
+		0
+	};
+	sceneDescription->curr_size = 2;
+	sceneDescription->max_size  = 13;
+	sceneDescription->objects[0] = Sphere{ {0.0f,    0.0f, -1.0f, 0.5f  } };
+	sceneDescription->objects[1] = Sphere{ {0.0f, -100.5f, -1.0f, 100.0f} };
+    
 
 
 
-	setupShaderPaths(shaderFiles);
-	mark();
     ctx->glfw.create(w, h, eventFuncs);
-	mark();
+	debug( /* Enable Advanced OpenGL Debugging if enabled. */
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(gl_debug_message_callback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+	);
+	glEnable(GL_DEPTH_TEST); 
     glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
 
-    basic_shader.createFrom({
-        { shaderFiles[0], GL_VERTEX_SHADER   },
-        { shaderFiles[1], GL_FRAGMENT_SHADER }
-    });
-    basic_compute.createFrom({{ shaderFiles[2], GL_COMPUTE_SHADER  }});
 
+	basic_shader.createFrom({ { shaderFiles[0], GL_VERTEX_SHADER   }, { shaderFiles[1], GL_FRAGMENT_SHADER } });
+    basic_compute.createFrom({{ shaderFiles[2], GL_COMPUTE_SHADER  }});
     
+
     vbo.create(BufferDescriptor{ vboData.data(), 4u, 
 			{{
 				{ GL_FLOAT, 3 },
@@ -209,58 +115,98 @@ int make_texture_resize_work()
 	});
 
 
+	sceneDescription->transform.viewport = {
+		viewportSize * ctx->glfw.aspectRatio<f32>(),
+		viewportSize
+	};
+	ssbo.create({ sceneDescription, __scast(u32, temporary), {{  { GL_UNSIGNED_BYTE, 1 }  }} },  GL_DYNAMIC_DRAW);
+	ssbo.setBindingIndex(1);
+	ssbo.bind();
+
+
+
+
     invocDims = computeDispatchSize({ w, h });
     basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
-
-    
     ifcrashdo(basic_shader.compile()  == GL_FALSE, debug_message("Problem Compiling Vertex-Fragment Shader\n"));
 	ifcrashdo(basic_compute.compile() == GL_FALSE, debug_message("Problem Compiling Compute Shader\n")		  );
-    texbuf.bindToUnit(0);
-    while(!ctx->glfw.shouldClose() && programStates[4]) 
+	programStates.running = true;
+	programStates.focused = true;
+	texbuf.bindToUnit(0);
+    while(programStates.running) 
     {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ctx->glfw.procUpcomingEvents();
-        renderUI(invocDims.dispatchGroup);
+        renderUI(
+			diffuseRecursionDepth,
+			samplesPerPixel,
+			randomNorm,
+			invocDims.dispatchGroup
+		);
 
 
-        basic_compute.bind();
-        texbuf.bindToImage(1, TEX_IMAGE_WRITE_ONLY_ACCESS);
-        glDispatchCompute(
-            invocDims.dispatchGroup.x, 
-            invocDims.dispatchGroup.y,
-            invocDims.dispatchGroup.z
-        );
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		if(!programStates.paused) 
+		{
+			/* Compute Shader Pass */
+			basic_compute.bind();
+			ssbo.bind();
+			basic_compute.uniform1f("u_dt", ctx->glfw.time_dt());
+			basic_compute.uniform1f("u_rand", randomNorm.x);
+			basic_compute.uniform1i("u_samplesPpx", samplesPerPixel);
+			basic_compute.uniform1i("u_recurseDepth", diffuseRecursionDepth);
+			texbuf.bindToImage(1, TEX_IMAGE_WRITE_ONLY_ACCESS);
+			glDispatchCompute(
+				invocDims.dispatchGroup.x, 
+				invocDims.dispatchGroup.y,
+				invocDims.dispatchGroup.z
+			);
+			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
-        basic_shader.bind();
-        vao.bind();
-        texbuf.bindToUnit(0);
-        basic_shader.uniform1i("tex", 0);
-        glDrawElements(GL_TRIANGLES, iboData.size(), GL_UNSIGNED_INT, 0);
+			/* Vertex Shader Pass */
+			basic_shader.bind();
+			vao.bind();
+			texbuf.bindToUnit(0);
+			basic_shader.uniform1i("tex", 0);
+			glDrawElements(GL_TRIANGLES, iboData.size(), GL_UNSIGNED_INT, 0);
 
 
-		if(programStates[2]) {
-			basic_shader.refreshShaderSource(0);
-			basic_shader.refreshShaderSource(1);
-			programStates[4] = basic_shader.compile();
+			/* Check for specific state changes */
+			if(programStates.windowSizeChange)
+			{
+				w = ctx->glfw.dims[0];
+				h = ctx->glfw.dims[1];
+				texbuf.recreateImage({ w, h });
+
+				invocDims = computeDispatchSize({ w, h });
+				sceneDescription->transform.viewport.x = ctx->glfw.aspectRatio<f32>() * viewportSize;
+				ssbo.update(offsetof(SceneData, transform.viewport.x), { &sceneDescription->transform.viewport.x, 4, {} });
+				
+				basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
+				programStates.refreshCompute = basic_compute.compile();
+			}
+
+			if(programStates.refreshShader) {
+				basic_shader.refreshShaderSource(0);
+				basic_shader.refreshShaderSource( 1);
+				programStates.refreshShader = basic_shader.compile();
+			}
+
+			if(programStates.refreshCompute) {
+				basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
+				programStates.refreshCompute = basic_compute.compile();
+			}
+
+
 		}
 
 
-        if(programStates[3])
-        {
-            w = ctx->glfw.dims[0];
-            h = ctx->glfw.dims[1];
-            texbuf.recreateImage({ w, h });
-
-
-            invocDims = computeDispatchSize({ w, h });
-            basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
-            programStates[4] = basic_compute.compile();
-        }
-
-
-		programStates[2] = isKeyPressed(KeyCode::NUM5);
-        programStates[3] = ctx->glfw.windowSizeChanged();
+		programStates.s[0]  = !ctx->glfw.shouldClose() && !isKeyPressed(KeyCode::ESCAPE);
+		programStates.s[1] ^= isKeyPressed(KeyCode::P);
+		programStates.s[2]  = !ctx->glfw.minimized();
+		programStates.s[3]  = isKeyPressed(KeyCode::NUM5);
+		programStates.s[4]  = isKeyPressed(KeyCode::NUM6);
+        programStates.s[5]  = ctx->glfw.windowSizeChanged();
         ctx->glfw.procOngoingEvents();
     }
     ctx->glfw.close();
@@ -271,6 +217,18 @@ int make_texture_resize_work()
     basic_compute.destroy();
     basic_shader.destroy();
     ctx->glfw.destroy();
-    free(shaderFiles[0]);
+    
+
     return 0;
 }
+
+
+/* 
+	Merged FixBlackScreen & Diffusion Branches.
+	Next:
+		* Materials
+		* reflectivity
+		* dynamic objects
+		* Polygons?
+		* dynamic camera?
+*/

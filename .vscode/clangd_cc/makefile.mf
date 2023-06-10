@@ -36,6 +36,7 @@ LIB_PATHS     = -L$(COMPILER_BASE_FOLDER)/../lib/GLFW/lib
 
 LDFLAGS = \
 		$(LIB_FILES) \
+		-dl \
 		-lopengl32 \
 		-lm \
 		-lunwind \

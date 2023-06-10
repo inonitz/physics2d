@@ -1,30 +1,15 @@
 #version 460 core
-layout(location = 0) in  vec2 texCoords;
-layout(location = 0) out vec4 finalCol;
+in  vec2 TexCoords;
+out vec4 FragColor;
 
-uniform sampler2D texData;
-
-
-/*
-layout(std460) buffer testing_ssbo {
-	vec2i textureDimensions;
-	vec4[] textureColors;
-};
-*/
+	
+uniform sampler2D tex;
 
 
 void main()
-{
-	vec4 intrmd = texture(texData, texCoords);
-	finalCol    = intrmd;
+{             
+    vec3 texCol = texture(tex, TexCoords).rgb;      
+    FragColor = vec4(texCol, 1.0);
 }
-
-
-/*
-	Figure out how to test the SSBO struct,
-	probably finish integrating the compute shader into the project,
-	and from there (if all goes according to plan) use the SSBO as part of the rendering process,
-	so that there'll be a visual difference that will make me notice that it worked.
-*/
 
 

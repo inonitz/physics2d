@@ -193,7 +193,6 @@ extern std::atomic<size_t> markflag;
 #define pack            __attribute__((packed))
 #define alignpk(size)   __attribute__((packed, aligned(size)))
 #define alignsz(size)   __attribute__((aligned(size)))
-
 #ifndef __force_inline 
 #define __force_inline inline __attribute__((always_inline))
 #else

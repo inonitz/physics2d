@@ -1,14 +1,11 @@
 #version 460 core
 layout(local_size_x =    , local_size_y =    , local_size_z =    ) in;
-layout(rgba32f, binding = 0) writeonly restrict uniform image2D imageOut;
+layout(rgba32f, binding = 1) writeonly restrict uniform image2D imageOut;
 
-
-layout(location = 2) uniform vec4  u_dt;
-layout(location = 3) uniform int   u_samplesPpx;
-layout(location = 4) uniform int   u_recurseDepth;
-layout(location = 5) uniform int   u_scatterFactor;
-layout(location = 6) uniform float u_scatterBase;
-
+layout(location = 1) uniform float u_dt;
+layout(location = 2) uniform float u_rand;
+layout(location = 3) uniform int u_samplesPpx;
+layout(location = 4) uniform int u_recurseDepth;
 
 struct Ray
 {
@@ -94,8 +91,8 @@ float random_norm(vec2 p) {
 vec3 simpleRandUnitSphere(in vec2 texelCoord, uint sampleNum)
 {
     vec3 r3 = vec3(
-        random(  vec2(u_dt.x, random(texelCoord)       )),
-        random(  vec2(u_dt.y, random(vec2(sampleNum))  )), 
+        random(  vec2(u_rand, random(texelCoord)       )),
+        random(  vec2(u_rand, random(vec2(sampleNum))  )), 
         0
     );
     r3.z = random(r3.xy);
@@ -245,7 +242,6 @@ vec3 CalculatePixelColor(in vec2 texelCoord)
     Ray  cameraRayAtUV;
     vec2 currTexel;
     const float pixel_samples_inv = 1.0f / float(u_samplesPpx);
-    const float c_powScatterFactor = pow(u_scatterBase, u_scatterFactor); /* might get rid of, doesn't achieve desired results */
 
 
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {

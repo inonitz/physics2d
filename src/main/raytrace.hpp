@@ -32,10 +32,9 @@ struct ComputeGroupSizes
 inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims);
 inline void renderImGui(
 	SceneData*   scene,
+	f32&         out_deltaTime,
 	i32& 		 out_samples, 
-	i32& 		 recursionDepth, 
-	i32& 		 imgScatteringFactor,
-	f32&         imgScatteringBasePowFactor,
+	i32& 		 recursionDepth,
 	math::vec4f& sample_randf, 
 	math::vec3u const& computeDispatchSize
 );
@@ -88,10 +87,9 @@ inline ComputeGroupSizes recomputeDispatchSize(math::vec2u const& dims)
 
 void renderImGui(
 	SceneData*   scene,
+	f32&         out_deltaTime,
 	i32& 		 out_samples, 
-	i32& 		 recursionDepth, 
-	i32& 		 imgScatteringFactor,
-	f32&         imgScatteringBasePowFactor,
+	i32& 		 recursionDepth,
 	math::vec4f& sample_randf, 
 	math::vec3u const& computeDispatchSize
 ) {
@@ -99,7 +97,7 @@ void renderImGui(
 	std::array<i32, 2> windowDims = ctx->glfw.dims;
 	static i32 work_grp_inf[7];
 	f32 dt = ctx->glfw.time_dt();
-
+	
 
 	__once(
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0,  &work_grp_inf[0]);
@@ -110,6 +108,7 @@ void renderImGui(
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2,   &work_grp_inf[5]);
 		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inf[6]);
 	);
+	out_deltaTime = dt;
 	ImGui::BeginGroup();
 	ImGui::BulletText("Currently Using GPU Vendor %s Model %s\n", glad_glGetString(GL_VENDOR), glad_glGetString(GL_RENDERER));
 	ImGui::BulletText("Max work-groups per compute shader: { %10d, %10d, %10d }\n", work_grp_inf[0], work_grp_inf[1], work_grp_inf[2]);
@@ -136,8 +135,6 @@ void renderImGui(
 	ImGui::SliderInt("Random Samples Per Pixel ", &out_samples   , 0, 128);
 	ImGui::SliderInt("Diffusion-Recursion Depth", &recursionDepth, 0, 64 );
 	ImGui::SliderFloat("Camera Viewport Length", &scene->transform.viewport.y, 0.0f, 10.0f);
-	ImGui::SliderInt("Texel Coord Scatter Power Factor", &imgScatteringFactor, -20, 20);
-	ImGui::InputFloat("Texel Coord Scatter Base Factor", &imgScatteringBasePowFactor, .1f, 0.0f, "%.05f");
 	ImGui::EndGroup();
 	return;
 }

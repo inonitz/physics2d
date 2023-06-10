@@ -8,8 +8,8 @@
 
 void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 {
-	glfwSetErrorCallback(glfwOverride.errorEvent);
-	ifcrashdo(!glfwInit(), 
+	mark(); glfwSetErrorCallback(glfwOverride.errorEvent);
+	mark(); ifcrashdo(!glfwInit(), 
 	{ 
 		printf("GLFW Initialization Failed!\n"); 
 	});

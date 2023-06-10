@@ -19,12 +19,11 @@ int raytracer()
 	bool running, focused = true, paused = false, changedResolution = false, refresh[3] = { false, false, false };
 	u8  sphereCount = 13;
 	u32 windowWidth = 1280, windowHeight = 720;
-	i32 		uniform_samplesppx     = 50;
-	i32 		uniform_diffRecursion  = 10;
-	i32         uniform_imgScatter     = -10;
-	f32 		uniform_imgScatterBase = 1.5f;
-	f32         camViewportWidth;
-	math::vec4f uniform_randnum        = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	i32 uniform_samplesppx    = 50;
+	i32 uniform_diffRecursion = 10;
+	f32 camViewportWidth;
+	f32 dt;
+	math::vec4f uniform_randnum = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
 	std::array< std::pair<const char*, u32>, 5> shaderStrings;
 	std::array< std::pair<char*,       u32>, 3> fullShaderPaths;
 
@@ -167,10 +166,9 @@ int raytracer()
 		{
 			renderImGui(
 				sceneDescription,
+				dt,
 				uniform_samplesppx, 
-				uniform_diffRecursion , 
-				uniform_imgScatter,
-				uniform_imgScatterBase,
+				uniform_diffRecursion, 
 				uniform_randnum,
 				invocDims.dispatchGroup
 			);
@@ -179,11 +177,10 @@ int raytracer()
 				/* Compute Shader Pass Here */
 				compute.bind();
 				ssbo.bind();
-				compute.uniform4fv("u_dt"         , uniform_randnum.begin());
+				compute.uniform1f("u_dt", dt);
+				compute.uniform4fv("u_rand"         , uniform_randnum.begin());
 				compute.uniform1i("u_samplesPpx"  , uniform_samplesppx     );
 				compute.uniform1i("u_recurseDepth", uniform_diffRecursion  );
-				compute.uniform1i("u_scatterFactor", uniform_imgScatter    );
-				compute.uniform1f("u_scatterBase"  , uniform_imgScatterBase);
 				glDispatchCompute(
 					invocDims.dispatchGroup.x, 
 					invocDims.dispatchGroup.y, 
