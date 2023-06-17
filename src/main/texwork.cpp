@@ -286,3 +286,101 @@ int make_texture_resize_work()
 		* Polygons?
 		* dynamic camera?
 */
+
+
+
+/*
+	Pseudocode for different material types:
+
+
+	if world.hit(ray, possibleHit):
+		if scatter(rayAtUV, possibleHit, attenuation, scatteredRay) 
+			return attenuation * getRayColor(scatteredRay, --depth);
+		return 0
+
+
+	* Lambertian {
+		worldRayIntersection(cameraRayAtUV, possibleHit);
+		cont = !isinf(possibleHit.t);
+		finalColor = vec3(1.0f);
+
+		if(cont) {
+			scatterDir = possibleHit.normal + simpleRandUnitSphere(texelCoord, i);
+			if(all(near_zero(scatter_dir)))
+				scatterDir = possibleHit.normal;
+
+			cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+			cameraRayAtUV.dir    = scatterDir;
+			attenuatedColor = materials[  objectToMaterial[possibleHit.objectIndex]  ].xyz;
+			finalColor *= attenuatedColor;
+		}
+	}
+
+
+	* Metal {
+		worldRayIntersection(cameraRayAtUV, possibleHit);
+		cont = !isinf(possibleHit.t);
+		finalColor = vec3(1.0f);
+
+		if(cont) {
+			reflectDir = reflectRay(normalize(cameraRayAtUV.dir)), possibleHit.normal);
+			
+			cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+			cameraRayAtUV.dir    = reflectDir;
+			attenuatedColor = materials[  objectToMaterial[possibleHit.objectIndex]  ].xyz;
+			
+			// stop the loop if scatter wasn't valid
+			cont = dot(reflectDir, possibleHit.normal) > 0);
+			finalColor *= mix(vec3(0.0f), attenuatedColor, bvec3(cont));
+		}
+	}
+
+
+	* Fuzzy Metal {
+		worldRayIntersection(cameraRayAtUV, possibleHit);
+		cont = !isinf(possibleHit.t);
+		finalColor = vec3(1.0f);
+		materialVec = vec4(0.0f);
+
+		if(cont) {
+			materialVec = materials[  objectToMaterial[possibleHit.objectIndex]  ];
+
+
+			reflectDir = reflectRay(normalize(cameraRayAtUV.dir)), possibleHit.normal);
+			cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+			cameraRayAtUV.dir    = reflectDir + materialVec.w * simpleRandUnitSphere(texelCoord, i);
+			attenuatedColor = materialVec.xyz;
+
+			// stop the loop if scatter wasn't valid
+			cont = dot(reflectDir, possibleHit.normal) > 0);
+			finalColor *= mix(vec3(0.0f), attenuatedColor, bvec3(cont));
+		}
+	}
+
+
+	* dielectric {
+		worldRayIntersection(cameraRayAtUV, possibleHit);
+		cont = !isinf(possibleHit.t);
+		finalColor = vec3(1.0f);
+
+		if(cont) {
+			front_face = dot(cameraRayAtUV.dir, possibleHit.normal) > 0);
+			refract_ratio = materials[  objectToMaterial[possibleHit.objectIndex]  ].w;
+			refract_ratio = mix(refract_ratio, 1.0f/refract_ratio, front_face);
+
+			unitRay = normalize(cameraRayAtUV.dir);
+			cos = dot(unitRay, possibleHit.normal);
+			sin = sqrt(1 - cos * cos);
+
+			bool shouldReflect = (refract_ratio * sin > 1.0f) || (reflectance(cos, refract_ratio) > random(texelCoord * u_rand));
+			cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+			cameraRayAtUV.dir = mix(
+				refractRay(unitRay, possibleHit.normal, refract_ratio),
+				reflectRay(unitRay, possibleHit.normal),
+				bvec3(shouldReflect) // if refraction not possible
+			);
+		}
+	}
+
+
+*/
