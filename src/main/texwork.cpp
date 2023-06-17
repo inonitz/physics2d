@@ -35,14 +35,16 @@ int make_texture_resize_work()
 	f32 viewportSize = 2.0f;
 	i32 samplesPerPixel       = 40;
 	i32 diffuseRecursionDepth = 8;
-	math::vec4f randomNorm = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
+	f32 randomNorm = randnorm32f();
 	std::array<const char*, 3> shaderFiles = {
 		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert",
 		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag",
 		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp"
 	};
+	std::vector<Material> 				  materials;
+	std::vector<ObjectMaterialDescriptor> objToMaterialMap;
     Program basic_shader, basic_compute;
-	ShaderStorageBuffer ssbo;
+	ShaderStorageBuffer sceneData, materialBuffer, objectMaterialMeta;
     VertexArray vao;
     Buffer      vbo, ibo;
     TextureBuffer     texbuf;
@@ -60,11 +62,24 @@ int make_texture_resize_work()
 		1.0f, 
 		0
 	};
-	sceneDescription->curr_size = 2;
+	sceneDescription->curr_size = 4;
 	sceneDescription->max_size  = 13;
-	sceneDescription->objects[0] = Sphere{ {0.0f,    0.0f, -1.0f, 0.5f  } };
-	sceneDescription->objects[1] = Sphere{ {0.0f, -100.5f, -1.0f, 100.0f} };
-    
+    sceneDescription->objects[0] = Sphere{ { 0.0f, -100.5f, -1.0f, 100.0f} };
+    sceneDescription->objects[1] = Sphere{ { 0.0f,    0.0f, -1.0f,   0.5f} };
+    sceneDescription->objects[2] = Sphere{ {-1.0f,    0.0f, -1.0f,   0.5f} };
+    sceneDescription->objects[3] = Sphere{ { 1.0f,    0.0f, -1.0f,   0.5f} };
+	materials = {
+		{0.8f, 0.8f, 0.0f, 0   },
+		{0.7f, 0.3f, 0.3f, 0   },
+		{0.8f, 0.8f, 0.8f, 0.0f},
+		{0.8f, 0.6f, 0.2f, 0.0f},
+	};
+	objToMaterialMap = {
+		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN, 0x00, 0},
+		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN, 0x00, 1},
+		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN,      0x00, 2},
+		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN,      0x00, 3}
+	};
 
 
 
@@ -119,11 +134,33 @@ int make_texture_resize_work()
 		viewportSize * ctx->glfw.aspectRatio<f32>(),
 		viewportSize
 	};
-	ssbo.create({ sceneDescription, __scast(u32, temporary), {{  { GL_UNSIGNED_BYTE, 1 }  }} },  GL_DYNAMIC_DRAW);
-	ssbo.setBindingIndex(1);
-	ssbo.bind();
-
-
+	sceneData.create(
+		{ 
+			sceneDescription, 
+			__scast(u32, temporary), 
+			VertexDescriptor::defaultVertex()
+		},  
+		GL_DYNAMIC_DRAW
+	);
+	materialBuffer.create(
+		{
+			materials.data(),
+			__scast(u32, materials.size()),
+			VertexDescriptor::defaultVertex()
+		},
+		GL_DYNAMIC_DRAW
+	);
+	objectMaterialMeta.create(
+		{
+			objToMaterialMap.data(),
+			__scast(u32, objToMaterialMap.size()),
+			VertexDescriptor::defaultVertex()
+		},
+		GL_DYNAMIC_DRAW
+	);
+	sceneData.setBindingIndex(1);
+	materialBuffer.setBindingIndex(2);
+	objectMaterialMeta.setBindingIndex(3);
 
 
     invocDims = computeDispatchSize({ w, h });
@@ -132,7 +169,7 @@ int make_texture_resize_work()
 	ifcrashdo(basic_compute.compile() == GL_FALSE, debug_message("Problem Compiling Compute Shader\n")		  );
 	programStates.running = true;
 	programStates.focused = true;
-	texbuf.bindToUnit(0);
+	// texbuf.bindToUnit(0);
     while(programStates.running) 
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -140,6 +177,8 @@ int make_texture_resize_work()
         renderUI(
 			diffuseRecursionDepth,
 			samplesPerPixel,
+			materials,
+			programStates.bytes[5],
 			randomNorm,
 			invocDims.dispatchGroup
 		);
@@ -149,9 +188,11 @@ int make_texture_resize_work()
 		{
 			/* Compute Shader Pass */
 			basic_compute.bind();
-			ssbo.bind();
+			sceneData.bind();
+			materialBuffer.bind();
+			objectMaterialMeta.bind();
 			basic_compute.uniform1f("u_dt", ctx->glfw.time_dt());
-			basic_compute.uniform1f("u_rand", randomNorm.x);
+			basic_compute.uniform1f("u_rand", randomNorm);
 			basic_compute.uniform1i("u_samplesPpx", samplesPerPixel);
 			basic_compute.uniform1i("u_recurseDepth", diffuseRecursionDepth);
 			texbuf.bindToImage(1, TEX_IMAGE_WRITE_ONLY_ACCESS);
@@ -180,8 +221,27 @@ int make_texture_resize_work()
 
 				invocDims = computeDispatchSize({ w, h });
 				sceneDescription->transform.viewport.x = ctx->glfw.aspectRatio<f32>() * viewportSize;
-				ssbo.update(offsetof(SceneData, transform.viewport.x), { &sceneDescription->transform.viewport.x, 4, {} });
+				sceneData.update(offsetof(SceneData, transform.viewport.x), { &sceneDescription->transform.viewport.x, 4, {} });
 				
+				basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
+				programStates.refreshCompute = basic_compute.compile();
+			}
+
+			if(programStates.refreshSSBOs)
+			{
+				mark(); materialBuffer.bind();
+				mark(); materialBuffer.update(sizeof(Material) * programStates.bytes[5], 
+				{ 
+						&materials[programStates.bytes[5]], 
+						__scast(u32, sizeof(Material)), 
+						{} 
+				});
+				mark();
+			}
+
+
+			if(programStates.refreshCompute) {
+				basic_compute.refreshShaderSource(0);
 				basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
 				programStates.refreshCompute = basic_compute.compile();
 			}
@@ -190,14 +250,8 @@ int make_texture_resize_work()
 				basic_shader.refreshShaderSource(0);
 				basic_shader.refreshShaderSource( 1);
 				programStates.refreshShader = basic_shader.compile();
+			
 			}
-
-			if(programStates.refreshCompute) {
-				basic_compute.resizeLocalWorkGroup(0, invocDims.localGroup);
-				programStates.refreshCompute = basic_compute.compile();
-			}
-
-
 		}
 
 
@@ -206,7 +260,7 @@ int make_texture_resize_work()
 		programStates.s[2]  = !ctx->glfw.minimized();
 		programStates.s[3]  = isKeyPressed(KeyCode::NUM5);
 		programStates.s[4]  = isKeyPressed(KeyCode::NUM6);
-        programStates.s[5]  = ctx->glfw.windowSizeChanged();
+        programStates.s[6]  = ctx->glfw.windowSizeChanged();
         ctx->glfw.procOngoingEvents();
     }
     ctx->glfw.close();

@@ -18,7 +18,7 @@ struct BenchmarkResult
 
 
     using chrono_ns = std::chrono::nanoseconds;
-    std::array<char, 200> name;
+    std::array<char, 200> name; /* totally arbitrary array size, i exepct no more than 200 chars per name */
     f32                   measured_ns;
     u8                    status;
 };

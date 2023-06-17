@@ -1,15 +1,15 @@
 #include <glad/glad.h>
 #include "window.hpp"
-#include "ImGui/imgui_impl_glfw.h"
-#include "ImGui/imgui_impl_opengl3.h"
+#include "ImGui1896/imgui_impl_glfw.h"
+#include "ImGui1896/imgui_impl_opengl3.h"
 
 
 
 
 void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
 {
-	mark(); glfwSetErrorCallback(glfwOverride.errorEvent);
-	mark(); ifcrashdo(!glfwInit(), 
+	glfwSetErrorCallback(glfwOverride.errorEvent);
+	ifcrashdo(!glfwInit(), 
 	{ 
 		printf("GLFW Initialization Failed!\n"); 
 	});
@@ -111,7 +111,7 @@ void window::procUpcomingEvents()
 
 void window::procOngoingEvents() 
 {
-	/* end frame */
+	/* end frame */ 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

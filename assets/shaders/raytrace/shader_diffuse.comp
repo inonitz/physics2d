@@ -1,5 +1,5 @@
 #version 460 core
-layout(local_size_x =    , local_size_y =    , local_size_z =    ) in;
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
 layout(rgba32f, binding = 1) writeonly restrict uniform image2D imageOut;
 
 layout(location = 1) uniform float u_dt;
@@ -7,14 +7,19 @@ layout(location = 2) uniform float u_rand;
 layout(location = 3) uniform int u_samplesPpx;
 layout(location = 4) uniform int u_recurseDepth;
 
+
 struct Ray
 {
     vec3 origin;
     vec3 dir;
 };
-struct Sphere 
+struct Sphere
 { 
-    vec4 pos_radius; 
+    vec4 pos_radius;
+};
+struct Material 
+{
+    vec4 data; 
 };
 struct CameraTransform
 {
@@ -25,7 +30,7 @@ struct CameraTransform
 };
 
 
-layout(std430, binding=1) buffer SceneData
+layout(std430, binding=1) readonly buffer SceneData
 {
     CameraTransform sceneCameraTransform;
     uint            sceneObjMaxLength;
@@ -33,6 +38,26 @@ layout(std430, binding=1) buffer SceneData
     uint            reserved[2];
     Sphere          sceneObject[];
 };
+
+
+layout(std430, binding=2) readonly buffer SceneMaterialBuffer
+{
+    Material materials[];
+};
+
+
+layout(std430, binding=3) readonly buffer SceneObjectToMaterialBuffer
+{
+    // /*
+    //     format:
+    //     u8  materialType;
+    //     u8  reserved;
+    //     u16 indexInMaterialSSBO; (materials[])
+    // */
+    uint objectToMaterial[];
+};
+
+
 
 
 vec3 rayAt(in Ray ray, in float t) { return ray.origin + ray.dir * t; }
@@ -100,12 +125,42 @@ vec3 simpleRandUnitSphere(in vec2 texelCoord, uint sampleNum)
 }
 
 
+vec3 reflectRay(in vec3 ray_dir, in vec3 normal)
+{
+    return ray_dir - 2 * dot(ray_dir, normal) * normal;
+}
+
+
+vec3 refractRay(in vec3 ray, in vec3 normal, in float lambda)
+{
+	// /* lambda = eta / eta_prime */
+	vec3 r_p, r_l;
+	r_p = lambda * (ray - dot(ray, normal) * normal);
+	r_l = sqrt( 1.0f - normal * dot(r_p, r_p) );
+	return r_p - r_l;
+}
+
+float reflectance(in float cos_angle, in float refraction_idx)
+{
+    float r = (1 - refraction_idx) / (1 + refraction_idx);
+    r *= r;
+    return r + (1.0f - r) * pow( (1.0f - cos_angle), 5 ); 
+}
+
+
+bvec3 near_zero(in vec3 vec)
+{
+    return lessThan(abs(vec), vec3(1e-8));
+}
+
+
 
 
 struct SphereRayIntersectionResult
 {
     float t;
     vec3  normal;
+    uint  objectIndex;
 };
 
 
@@ -113,8 +168,7 @@ void intersection(
     in  Ray    R, 
     in  Sphere S, 
     in  vec2   t_bounds, 
-    out SphereRayIntersectionResult 
-    result
+    out SphereRayIntersectionResult result
 ) {
     float a, b, ac, discrim;
     vec3 tmp;
@@ -168,6 +222,7 @@ void worldRayIntersection(
 
     min_result.t      = c_infinity;
     min_result.normal = vec3(0.0f);
+    min_result.objectIndex = 0;
     for(int i = 0; i < sceneObjCurrLength; ++i)
     {
         intersection(ray, sceneObject[i], t_limits, curr_result);
@@ -178,6 +233,7 @@ void worldRayIntersection(
         if(curr_result.t < t_limits.y) {
             t_limits.y = curr_result.t;
             min_result = curr_result;
+            min_result.objectIndex = i; /* objectIndex isn't relevant to the intersection function */
         }
     }
     result = min_result;
@@ -198,6 +254,7 @@ vec3 defaultRayColor(in Ray ray)
 
 
 
+
 vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
 {
     SphereRayIntersectionResult possibleHit;
@@ -208,6 +265,7 @@ vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
     bool cont    = true;
 
 
+    /* Diffuse (Lambertian-Hemispherical) scattering */
     cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
     for(; i < u_recurseDepth && cont; ++i)
     {
@@ -216,9 +274,6 @@ vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
         if(cont) {
             ++mulHalf;
             cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
-            // cameraRayAtUV.dir    = possibleHit.normal + simpleRandUnitSphere(texelCoord, i); /* fake lambertian */
-            
-            /* true lambertian */
             cameraRayAtUV.dir = simpleRandUnitSphere(texelCoord, i);
             cameraRayAtUV.dir *= mix(-1.0f, 1.0f, dot(cameraRayAtUV.dir, possibleHit.normal) > 0);
         }
@@ -232,6 +287,127 @@ vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
 }
 
 
+vec3 CalculatePixelColorLambertian(in vec2 texelCoord)
+{
+    SphereRayIntersectionResult possibleHit;
+    Ray  cameraRayAtUV;
+    vec4 materialData;
+    uint obj_to_mat = 0;
+
+    vec3 finalColor = vec3(1.0f);
+    vec3 attenuatedColor;
+    vec3 scatterDir;
+    vec3 reflectDir;
+    vec3 refractDir;
+
+    vec3 OpDir;
+    vec3 unitRay;
+    vec3 randRay;
+    float refract_ratio = 0.0f, cost, sint;
+    int  i       = 0;
+    bool cont    = true;
+
+
+    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
+    for(; i < u_recurseDepth && cont; ++i)
+    {
+        worldRayIntersection(cameraRayAtUV, possibleHit);
+        cont = !isinf(possibleHit.t);
+        if(cont) {
+            obj_to_mat = objectToMaterial[possibleHit.objectIndex];
+            materialData = materials[  obj_to_mat >> 16 ].data;
+        
+            unitRay = normalize(cameraRayAtUV.dir);
+            randRay = simpleRandUnitSphere(texelCoord, i);
+            
+            cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+            switch(obj_to_mat & 0xFF) {
+                case 0:
+                    OpDir = possibleHit.normal + randRay;
+                    if(all(near_zero(OpDir)))
+                        OpDir = possibleHit.normal;
+                    
+                    cameraRayAtUV.dir = OpDir;
+                    attenuatedColor = materialData.xyz;
+                    finalColor *= attenuatedColor;
+                    break;
+                case 1: /* if w == 0.0f then the metal is reflective as usual, otherwise it is fuzzy */
+                    OpDir = reflectRay(unitRay, possibleHit.normal);
+                    cameraRayAtUV.dir = OpDir + mix(randRay, vec3(0.0f), bvec3(materialData.w == +0.0f));
+                    attenuatedColor = materialData.xyz;
+		            
+                    cont = dot(OpDir, possibleHit.normal) > 0.0f; /* stop the loop if scatter wasn't valid */
+		            finalColor *= mix(vec3(0.0f), attenuatedColor, bvec3(cont)); 
+                    break; 
+                case 3:
+                    cost = dot(unitRay, possibleHit.normal);
+                    sint = sqrt( 1.0f - cost * cost );
+                    refract_ratio = mix(
+                        materialData.w, 
+                        1.0f/materialData.w, 
+                        cost > 0.0f /* front_face */
+                    );
+                    
+                    // bool shouldReflect = (refract_ratio * sint > 1.0f) || reflectance(cost, refract_ratio) > randRay.y;
+                    if(  (refract_ratio * sint > 1.0f) || reflectance(cost, refract_ratio) > randRay.y  ) {
+                        cameraRayAtUV.dir = reflectRay(unitRay, possibleHit.normal);
+                    } else {
+                        cameraRayAtUV.dir = refractRay(unitRay, possibleHit.normal, refract_ratio);
+                    }
+                    // cameraRayAtUV.dir = mix(
+                    //     refractRay(unitRay, possibleHit.normal, refract_ratio),
+                    //     reflectRay(unitRay, possibleHit.normal),
+                    //     bvec3(shouldReflect) /* if refraction not possible */
+                    // );
+                    break;
+                default:
+                break;
+            }
+        }
+    }
+    finalColor = mix(finalColor, vec3(0.0f), bvec3(i == u_recurseDepth));
+    return mix(
+        defaultRayColor(cameraRayAtUV),
+        finalColor,
+        bvec3(i == u_recurseDepth)
+    );
+}
+
+
+vec3 CalculatePixelColorLambertianOnly(in vec2 texelCoord)
+{
+    SphereRayIntersectionResult possibleHit;
+    Ray  cameraRayAtUV;
+    vec4 materialData;
+    vec3 finalColor = vec3(1.0f);
+    vec3 attenuatedColor;
+    vec3 scatterDir;
+    int  i       = 0;
+    bool cont    = true;
+
+
+    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
+    for(; i < u_recurseDepth && cont; ++i)
+    {
+        worldRayIntersection(cameraRayAtUV, possibleHit);
+        cont = !isinf(possibleHit.t);
+        if(cont) {
+            materialData = materials[  objectToMaterial[possibleHit.objectIndex] >> 16 ].data;
+            scatterDir = possibleHit.normal + simpleRandUnitSphere(texelCoord, i);
+            // if(all(near_zero(scatterDir))) scatterDir = possibleHit.normal;
+
+
+            cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
+            cameraRayAtUV.dir    = scatterDir;
+            attenuatedColor = materialData.xyz;
+            finalColor *= attenuatedColor;
+        }
+    }
+    if(i == u_recurseDepth) {
+        return vec3(0.0f);
+    }
+    return finalColor * defaultRayColor(cameraRayAtUV);
+}
 
 
 
@@ -246,7 +422,7 @@ vec3 CalculatePixelColor(in vec2 texelCoord)
 
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
         currTexel = texelCoord + simpleRandUnitSphere(texelCoord, sampleIdx).xz * pixel_samples_inv * pixel_samples_inv;
-        outColor += CalculatePixelColorDiffuse(currTexel);
+        outColor += CalculatePixelColorLambertianOnly(currTexel);
     }
 
     outColor *= pixel_samples_inv; /* Get Average over All Samples */
@@ -261,7 +437,7 @@ void main()
 
     /* Image Output Coordinates (pixel uv coord) */
     ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
-    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
+    vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy); 
 
 
     finalColor = pow( /* gamma correction */

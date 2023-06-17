@@ -1,6 +1,5 @@
 #pragma once
 #include "window.hpp"
-// #include "vec.hpp"
 #include "camera.hpp"
 #include <array>
 #include <vector>
@@ -40,9 +39,32 @@ struct Vertex {
 };
 
 
-struct Sphere
+
+
+/*
+	{ Position(X, Y, Z), Radius(W) }
+*/
+using Sphere = math::vec4f;
+
+
+/* 
+	Depends on Material type:
+	Lambertian: { albedo(x, y, z), reserved 	    }
+	Metal:	    { albedo(x, y, z), fuzz     	    }
+	dialectric: { reserved, 	   refraction_index }
+*/
+using Material = math::vec4f;
+
+
+struct pack ObjectMaterialDescriptor
 {
-	math::vec4f center_radius; /* { Center(x, y, z), radius }*/
+	#define MATERIAL_LAMBERTIAN  0b00
+	#define MATERIAL_METAL 		 0b01
+	#define MATERIAL_METAL_FUZZY 0b10
+	#define MATERIAL_DIELECTRIC  0b11
+	u8  materialType;
+	u8  reserved;
+	u16 materialIndex;
 };
 
 

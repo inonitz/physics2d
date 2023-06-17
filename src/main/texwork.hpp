@@ -1,6 +1,6 @@
 #pragma once
 #include <glad/glad.h>
-#include <ImGui/imgui.h>
+#include <ImGui1896/imgui.h>
 #include "context.hpp"
 #include "util/random.hpp"
 
@@ -23,20 +23,24 @@ union boolStates {
 		bool focused;
 		bool refreshShader;
 		bool refreshCompute;
+		bool refreshSSBOs;
 		bool windowSizeChange;
 	};
 	#pragma GCC diagnostic pop
-	bool s[6];
+	bool s[7];
+	u8   bytes[7];
 };
 
 
 void setupShaderPaths(std::array<char*, 3>& fullShaderNames);
 ComputeGroupSizes computeDispatchSize(math::vec2u const& dims);
 void renderUI(
-	i32& 			   diffuseRecursionDepth,
-	i32& 			   samplesPerPixel,
-	math::vec4f&       randomFloats,
-	math::vec3u const& computeDispatchSize
+	i32& 			       diffuseRecursionDepth,
+	i32& 			       samplesPerPixel,
+	std::vector<Material>& objectMaterials,
+	u8&                    refreshMaterials,
+	f32&       	  		   randomFloat,
+	math::vec3u const& 	   computeDispatchSize
 );
 int make_texture_resize_work();
 
@@ -113,10 +117,12 @@ inline ComputeGroupSizes computeDispatchSize(math::vec2u const& dims)
 
 
 inline void renderUI(
-	i32& 			   diffuseRecursionDepth,
-	i32& 			   samplesPerPixel,
-	math::vec4f&       randomFloats,
-	math::vec3u const& computeDispatchSize
+	i32& 			   	   diffuseRecursionDepth,
+	i32& 			   	   samplesPerPixel,
+	std::vector<Material>& objectMaterials,
+	u8&                    refreshMaterials,
+	f32&       	   		   randomFloat,
+	math::vec3u const& 	   computeDispatchSize
 ) {
 	auto* ctx = getGlobalContext();
 	std::array<i32, 2> windowDims = ctx->glfw.dims;
@@ -148,18 +154,34 @@ inline void renderUI(
 	ImGui::BeginGroup();
 	ImGui::Text("Window Resolution is %ux%u\n", windowDims[0], windowDims[1]);
 	ImGui::Text("Rendering at %.02f Frames Per Second (%.05f ms/frame)", (1.0f / dt), (dt * 1000.0f) );
-	if(ImGui::Button("Refresh =>"))
-		// randomFloats = { randnorm32f(), randnorm32f(), randnorm32f(), randnorm32f() };
-		randomFloats = math::vec4f{ randnorm32f() };
+
+
+	/* 
+		Raises GL_INVALID_VALUE when Modifying Materials above idx = 0 
+			* check if the data is actually being modified
+			* maybe the state of each ColorEdit is still not separated
+			* maybe opengl is being sent wrong offsets/data, also check (in materials.update())
+	*/
+	refreshMaterials = 0;
+ 	static char MaterialAt[20] = {}; /*  no more than 99 please :) */
+	ImGui::Begin("Object Materials");
+	for(size_t i = 0; i < objectMaterials.size(); ++i) {
+		sprintf(MaterialAt, "Material %2d", __scast(u32, i));
+		
+
+		ImGui::ColorEdit4(MaterialAt, &objectMaterials[i].x);
+		if(ImGui::IsItemFocused()) {
+			refreshMaterials = __scast(u8, i);
+		}
+	}
+	ImGui::End();
+
+
+	if(ImGui::Button("Refresh =>")) randomFloat = randnorm32f();
 	ImGui::SameLine();
-	ImGui::Text("Random Vec4: { %.05f, %.05f, %.05f, %.05f }", 
-		randomFloats.x, 
-		randomFloats.y, 
-		randomFloats.z, 
-		randomFloats.w
-	);
-	ImGui::SliderInt("Random Samples Per Pixel ", &samplesPerPixel   , 0, 128);
-	ImGui::SliderInt("Diffusion-Recursion Depth", &diffuseRecursionDepth, 0, 64 );
+	ImGui::Text("Generated Float: %.05f", randomFloat);
+	ImGui::SliderInt("Samples Per Pixel ", &samplesPerPixel   , 0, 128);
+	ImGui::SliderInt("Ray Trace Depth   ", &diffuseRecursionDepth, 0, 64 );
 	ImGui::EndGroup();
 	return;
 }

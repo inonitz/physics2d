@@ -111,6 +111,30 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
+            "src/gl/framebuffer.cpp",
+            "-o",
+            "build/debug/obj/gl/framebuffer_cpp.o"
+        ],
+        "directory": "/c/CTools/Projects/mglw-strip",
+        "file": "/c/CTools/Projects/mglw-strip/src/gl/framebuffer.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/gl/framebuffer_cpp.o"
+    },
+    {
+        "arguments": [
+            "\"C:\\CTools\\mingw64-msvcrt\"/bin/x86_64-w64-mingw32-g++",
+            "-std=c++17",
+            "-c",
+            "-pedantic",
+            "-Werror",
+            "-Wall",
+            "-Wextra",
+            "-march=native",
+            "-mtune=native",
+            "-g",
+            "-Os",
+            "-D_DEBUG",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
+            "-I\"C:/CTools/Projects/mglw-strip\"/src",
             "src/gl/shader2.cpp",
             "-o",
             "build/debug/obj/gl/shader2_cpp.o"
@@ -183,13 +207,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui.cpp",
+            "src/include/ImGui1896/imgui.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_cpp.o"
     },
     {
         "arguments": [
@@ -207,13 +231,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui_draw.cpp",
+            "src/include/ImGui1896/imgui_demo.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_draw_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_demo_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_draw.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_draw_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_demo.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_demo_cpp.o"
     },
     {
         "arguments": [
@@ -231,13 +255,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui_impl_glfw.cpp",
+            "src/include/ImGui1896/imgui_draw.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_draw_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_impl_glfw.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_glfw_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_draw.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_draw_cpp.o"
     },
     {
         "arguments": [
@@ -255,13 +279,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui_impl_opengl3.cpp",
+            "src/include/ImGui1896/imgui_impl_glfw.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_impl_glfw_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_impl_opengl3.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_impl_opengl3_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_impl_glfw.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_impl_glfw_cpp.o"
     },
     {
         "arguments": [
@@ -279,13 +303,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui_tables.cpp",
+            "src/include/ImGui1896/imgui_impl_opengl3.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_tables_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_impl_opengl3_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_tables.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_tables_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_impl_opengl3.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_impl_opengl3_cpp.o"
     },
     {
         "arguments": [
@@ -303,13 +327,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/ImGui/imgui_widgets.cpp",
+            "src/include/ImGui1896/imgui_tables.cpp",
             "-o",
-            "build/debug/obj/include/ImGui/imgui_widgets_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_tables_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui/imgui_widgets.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui/imgui_widgets_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_tables.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_tables_cpp.o"
     },
     {
         "arguments": [
@@ -327,13 +351,13 @@
             "-D_DEBUG",
             "-I\"C:/CTools/Projects/mglw-strip\"/src/include",
             "-I\"C:/CTools/Projects/mglw-strip\"/src",
-            "src/include/glm/detail/glm.cpp",
+            "src/include/ImGui1896/imgui_widgets.cpp",
             "-o",
-            "build/debug/obj/include/glm/detail/glm_cpp.o"
+            "build/debug/obj/include/ImGui1896/imgui_widgets_cpp.o"
         ],
         "directory": "/c/CTools/Projects/mglw-strip",
-        "file": "/c/CTools/Projects/mglw-strip/src/include/glm/detail/glm.cpp",
-        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/glm/detail/glm_cpp.o"
+        "file": "/c/CTools/Projects/mglw-strip/src/include/ImGui1896/imgui_widgets.cpp",
+        "output": "/c/CTools/Projects/mglw-strip/build/debug/obj/include/ImGui1896/imgui_widgets_cpp.o"
     },
     {
         "arguments": [

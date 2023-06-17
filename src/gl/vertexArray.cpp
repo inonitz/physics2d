@@ -128,13 +128,15 @@ void ShaderStorageBuffer::clearBindingIndex()
 
 
 void ShaderStorageBuffer::bind() {
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_base.m_id);
+	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_base.m_id);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_bindingPoint, m_base.m_id);
 	return;
 }
 
 
 void ShaderStorageBuffer::unbind() {
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_bindingPoint, 0);
 	return;
 }
 

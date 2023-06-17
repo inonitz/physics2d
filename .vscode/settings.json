@@ -105,7 +105,7 @@
         "${workspaceFolder}/assets/**" : true,
         "${workspaceFolder}/build/**": true,
         "${workspaceFolder}/src/include/glad": true,
-        "${workspaceFolder}/src/include/imgui185": true
+        "${workspaceFolder}/src/include/imgui1896": true
     },
     "editor.fontSize": 14,
     "window.zoomLevel": 0,
@@ -125,9 +125,6 @@
         "--include-directory=${workspaceFolder}/src/include",
         "--include-directory=${workspaceFolder}/src",
         "-D_DEBUG"
-    ]
-    // "--query-driver=C:/Program Files/Programming Utillities/mingw-ucrt/bin/x86_64-w64-mingw32-g++",
-    // // "--query-driver=C:/CTools/mingw64-msvcrt/bin/x86_64-w64-mingw32-g++",
-    // "--include-directory=C:/CTools/mingw64-msvcrt/include/c++/v1",
+    ],
     // "python.analysis.typeCheckingMode": "basic"
 }

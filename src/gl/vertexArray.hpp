@@ -24,7 +24,9 @@ struct VertexDescriptor
 	u8     attributeCount() const { return attributes.size(); }
 	size_t totalSize() 		const;
 
-
+	static VertexDescriptor defaultVertex() {
+		return VertexDescriptor{{  { 0x1401, 1 }  }}; /* 0x1401 = GL_UNSIGNED_BYTE */
+	}
 };
 
 
