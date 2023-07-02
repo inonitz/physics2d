@@ -255,57 +255,17 @@ vec3 defaultRayColor(in Ray ray)
 
 
 
-vec3 CalculatePixelColorDiffuse(in vec2 texelCoord)
+vec3 CalculatePixelColorMaterial(in vec2 texelCoord)
 {
     SphereRayIntersectionResult possibleHit;
     Ray  cameraRayAtUV;
-    vec3 returnedColor;
-    uint mulHalf = 0;
+    vec3 attenuatedColor = vec3(1.0f);
+    vec3 unitRay, randRay, operRay;
+    vec4 selectedMaterialData;
+    uint selectedMaterial;
     int  i       = 0;
-    bool cont    = true;
-
-
-    /* Diffuse (Lambertian-Hemispherical) scattering */
-    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
-    for(; i < u_recurseDepth && cont; ++i)
-    {
-        worldRayIntersection(cameraRayAtUV, possibleHit);
-        cont = !isinf(possibleHit.t);
-        if(cont) {
-            ++mulHalf;
-            cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
-            cameraRayAtUV.dir = simpleRandUnitSphere(texelCoord, i);
-            cameraRayAtUV.dir *= mix(-1.0f, 1.0f, dot(cameraRayAtUV.dir, possibleHit.normal) > 0);
-        }
-    }
-    returnedColor = mix(
-        defaultRayColor(cameraRayAtUV),
-        vec3(0.0f),
-        bvec3(i == u_recurseDepth)
-    );
-    return pow(0.5f, mulHalf) * returnedColor;
-}
-
-
-vec3 CalculatePixelColorLambertian(in vec2 texelCoord)
-{
-    SphereRayIntersectionResult possibleHit;
-    Ray  cameraRayAtUV;
-    vec4 materialData;
-    uint obj_to_mat = 0;
-
-    vec3 finalColor = vec3(1.0f);
-    vec3 attenuatedColor;
-    vec3 scatterDir;
-    vec3 reflectDir;
-    vec3 refractDir;
-
-    vec3 OpDir;
-    vec3 unitRay;
-    vec3 randRay;
-    float refract_ratio = 0.0f, cost, sint;
-    int  i       = 0;
-    bool cont    = true;
+    bool cont    = true, shouldRefract = true;
+    float refract_ratio, cost, sint;
 
 
     cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
@@ -314,100 +274,57 @@ vec3 CalculatePixelColorLambertian(in vec2 texelCoord)
         worldRayIntersection(cameraRayAtUV, possibleHit);
         cont = !isinf(possibleHit.t);
         if(cont) {
-            obj_to_mat = objectToMaterial[possibleHit.objectIndex];
-            materialData = materials[  obj_to_mat >> 16 ].data;
-        
+            selectedMaterial     = objectToMaterial[ possibleHit.objectIndex ];
+            selectedMaterialData = materials[ selectedMaterial >> 16 ].data;
             unitRay = normalize(cameraRayAtUV.dir);
             randRay = simpleRandUnitSphere(texelCoord, i);
-            
+
+
             cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
-            switch(obj_to_mat & 0xFF) {
-                case 0:
-                    OpDir = possibleHit.normal + randRay;
-                    if(all(near_zero(OpDir)))
-                        OpDir = possibleHit.normal;
-                    
-                    cameraRayAtUV.dir = OpDir;
-                    attenuatedColor = materialData.xyz;
-                    finalColor *= attenuatedColor;
-                    break;
-                case 1: /* if w == 0.0f then the metal is reflective as usual, otherwise it is fuzzy */
-                    OpDir = reflectRay(unitRay, possibleHit.normal);
-                    cameraRayAtUV.dir = OpDir + mix(randRay, vec3(0.0f), bvec3(materialData.w == +0.0f));
-                    attenuatedColor = materialData.xyz;
-		            
-                    cont = dot(OpDir, possibleHit.normal) > 0.0f; /* stop the loop if scatter wasn't valid */
-		            finalColor *= mix(vec3(0.0f), attenuatedColor, bvec3(cont)); 
-                    break; 
-                case 3:
-                    cost = dot(unitRay, possibleHit.normal);
-                    sint = sqrt( 1.0f - cost * cost );
-                    refract_ratio = mix(
-                        materialData.w, 
-                        1.0f/materialData.w, 
-                        cost > 0.0f /* front_face */
-                    );
-                    
-                    // bool shouldReflect = (refract_ratio * sint > 1.0f) || reflectance(cost, refract_ratio) > randRay.y;
-                    if(  (refract_ratio * sint > 1.0f) || reflectance(cost, refract_ratio) > randRay.y  ) {
-                        cameraRayAtUV.dir = reflectRay(unitRay, possibleHit.normal);
-                    } else {
-                        cameraRayAtUV.dir = refractRay(unitRay, possibleHit.normal, refract_ratio);
-                    }
-                    // cameraRayAtUV.dir = mix(
-                    //     refractRay(unitRay, possibleHit.normal, refract_ratio),
-                    //     reflectRay(unitRay, possibleHit.normal),
-                    //     bvec3(shouldReflect) /* if refraction not possible */
-                    // );
-                    break;
-                default:
+            switch(selectedMaterial & 0xFF) {
+                case 0: // LAMBERTIAN
+                    operRay = possibleHit.normal + randRay;
+                    if(all(near_zero(operRay)))
+                        operRay = possibleHit.normal;
+
+                    cameraRayAtUV.dir = operRay;
+                    attenuatedColor *= selectedMaterialData.xyz;
+                break;
+                case 1: // METAL - if w component is non-zero, then metal is fuzzy
+                    operRay = reflectRay(unitRay, possibleHit.normal);
+                    cameraRayAtUV.dir = operRay + selectedMaterialData.w * randRay;
+                    cont = dot(operRay, possibleHit.normal) > 0.0f;
+                    attenuatedColor *= mix( vec3(0.0f), selectedMaterialData.xyz, bvec3(cont) );
+                break;
+                case 3: // DIELECTRIC
+                cost = dot(unitRay, possibleHit.normal);
+                refract_ratio = selectedMaterialData.w;
+                refract_ratio = mix(refract_ratio, 1.0f/refract_ratio, cost > 0.0f);
+                sint = sqrt(1 - cost * cost);
+
+                shouldRefract = refract_ratio * sint > 1.0f;
+                shouldRefract = shouldRefract || ( reflectance(cost, refract_ratio) > randRay.y );
+                if(shouldRefract) {
+                    cameraRayAtUV.dir = reflectRay(unitRay, possibleHit.normal);
+                } else {
+                    cameraRayAtUV.dir = refractRay(unitRay, possibleHit.normal, refract_ratio);
+                }
+                // cameraRayAtUV.dir = mix(
+                //     refractRay(unitRay, possibleHit.normal, refract_ratio),
+                //     reflectRay(unitRay, possibleHit.normal),
+                //     bvec3(shouldRefract)
+                // );
                 break;
             }
-        }
-    }
-    finalColor = mix(finalColor, vec3(0.0f), bvec3(i == u_recurseDepth));
-    return mix(
-        defaultRayColor(cameraRayAtUV),
-        finalColor,
-        bvec3(i == u_recurseDepth)
-    );
-}
-
-
-vec3 CalculatePixelColorLambertianOnly(in vec2 texelCoord)
-{
-    SphereRayIntersectionResult possibleHit;
-    Ray  cameraRayAtUV;
-    vec4 materialData;
-    vec3 finalColor = vec3(1.0f);
-    vec3 attenuatedColor;
-    vec3 scatterDir;
-    int  i       = 0;
-    bool cont    = true;
-
-
-    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
-    for(; i < u_recurseDepth && cont; ++i)
-    {
-        worldRayIntersection(cameraRayAtUV, possibleHit);
-        cont = !isinf(possibleHit.t);
-        if(cont) {
-            materialData = materials[  objectToMaterial[possibleHit.objectIndex] >> 16 ].data;
-            scatterDir = possibleHit.normal + simpleRandUnitSphere(texelCoord, i);
-            // if(all(near_zero(scatterDir))) scatterDir = possibleHit.normal;
-
-
-            cameraRayAtUV.origin = rayAt(cameraRayAtUV, possibleHit.t);
-            cameraRayAtUV.dir    = scatterDir;
-            attenuatedColor = materialData.xyz;
-            finalColor *= attenuatedColor;
         }
     }
     if(i == u_recurseDepth) {
         return vec3(0.0f);
     }
-    return finalColor * defaultRayColor(cameraRayAtUV);
+    return attenuatedColor * defaultRayColor(cameraRayAtUV);
 }
+
+
 
 
 
@@ -415,14 +332,13 @@ vec3 CalculatePixelColor(in vec2 texelCoord)
 {
     SphereRayIntersectionResult possibleHit;
     vec3 outColor = vec3(0.0f);
-    Ray  cameraRayAtUV;
     vec2 currTexel;
     const float pixel_samples_inv = 1.0f / float(u_samplesPpx);
 
 
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
         currTexel = texelCoord + simpleRandUnitSphere(texelCoord, sampleIdx).xz * pixel_samples_inv * pixel_samples_inv;
-        outColor += CalculatePixelColorLambertianOnly(currTexel);
+        outColor += CalculatePixelColorMaterial(currTexel);
     }
 
     outColor *= pixel_samples_inv; /* Get Average over All Samples */

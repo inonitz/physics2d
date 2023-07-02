@@ -156,32 +156,27 @@ inline void renderUI(
 	ImGui::Text("Rendering at %.02f Frames Per Second (%.05f ms/frame)", (1.0f / dt), (dt * 1000.0f) );
 
 
-	/* 
-		Raises GL_INVALID_VALUE when Modifying Materials above idx = 0 
-			* check if the data is actually being modified
-			* maybe the state of each ColorEdit is still not separated
-			* maybe opengl is being sent wrong offsets/data, also check (in materials.update())
-	*/
-	refreshMaterials = 0;
- 	static char MaterialAt[20] = {}; /*  no more than 99 please :) */
-	ImGui::Begin("Object Materials");
-	for(size_t i = 0; i < objectMaterials.size(); ++i) {
-		sprintf(MaterialAt, "Material %2d", __scast(u32, i));
-		
-
-		ImGui::ColorEdit4(MaterialAt, &objectMaterials[i].x);
-		if(ImGui::IsItemFocused()) {
-			refreshMaterials = __scast(u8, i);
-		}
-	}
-	ImGui::End();
-
-
 	if(ImGui::Button("Refresh =>")) randomFloat = randnorm32f();
 	ImGui::SameLine();
 	ImGui::Text("Generated Float: %.05f", randomFloat);
 	ImGui::SliderInt("Samples Per Pixel ", &samplesPerPixel   , 0, 128);
 	ImGui::SliderInt("Ray Trace Depth   ", &diffuseRecursionDepth, 0, 64 );
 	ImGui::EndGroup();
+
+
+	refreshMaterials = 0;
+	struct CharArray { char __[20]; };
+	static std::vector<CharArray> MaterialNames{objectMaterials.size()};
+	__once(for(size_t i = 0; i < objectMaterials.size(); ++i) { /* Currently the amount of materials is static so this is fine. */
+			sprintf(MaterialNames[i].__, "Material %2d", __scast(u32, i));
+	});
+	ImGui::BeginChild("Object Materials");
+	for(size_t i = 0; i < objectMaterials.size(); ++i) {
+		ImGui::ColorEdit4(MaterialNames[i].__, &objectMaterials[i].x);
+		refreshMaterials = ImGui::IsItemFocused() * __scast(u8, i) + !ImGui::IsItemFocused() * refreshMaterials;
+	}
+	ImGui::EndChild();
+
+
 	return;
 }

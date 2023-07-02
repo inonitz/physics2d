@@ -36,10 +36,15 @@ int make_texture_resize_work()
 	i32 samplesPerPixel       = 40;
 	i32 diffuseRecursionDepth = 8;
 	f32 randomNorm = randnorm32f();
+	// std::array<const char*, 3> shaderFiles = {
+	// 	"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert",
+	// 	"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag",
+	// 	"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp"
+	// };
 	std::array<const char*, 3> shaderFiles = {
-		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.vert",
-		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader.frag",
-		"C:/CTools/Projects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp"
+		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.vert",
+		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader.frag",
+		"C:/Program Files/Programming Utillities/CProjects/mglw-strip/assets/shaders/raytrace/shader_diffuse.comp"
 	};
 	std::vector<Material> 				  materials;
 	std::vector<ObjectMaterialDescriptor> objToMaterialMap;
@@ -70,16 +75,17 @@ int make_texture_resize_work()
     sceneDescription->objects[3] = Sphere{ { 1.0f,    0.0f, -1.0f,   0.5f} };
 	materials = {
 		{0.8f, 0.8f, 0.0f, 0   },
-		{0.7f, 0.3f, 0.3f, 0   },
-		{0.8f, 0.8f, 0.8f, 0.0f},
-		{0.8f, 0.6f, 0.2f, 0.0f},
+		{0.1f, 0.2f, 0.5f, 0   },
+		{0.0f, 0.0f, 0.0f, +1.5f},
+		{0.8f, 0.6f, 0.2f, +0.0f},
 	};
 	objToMaterialMap = {
 		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN, 0x00, 0},
 		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN, 0x00, 1},
-		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN,      0x00, 2},
-		ObjectMaterialDescriptor{ MATERIAL_LAMBERTIAN,      0x00, 3}
+		ObjectMaterialDescriptor{ MATERIAL_DIELECTRIC,      0x00, 2},
+		ObjectMaterialDescriptor{ MATERIAL_METAL,      0x00, 3}
 	};
+
 
 
 
@@ -88,8 +94,8 @@ int make_texture_resize_work()
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
     glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
@@ -145,7 +151,7 @@ int make_texture_resize_work()
 	materialBuffer.create(
 		{
 			materials.data(),
-			__scast(u32, materials.size()),
+			__scast(u32, materials.size() * sizeof(Material)),
 			VertexDescriptor::defaultVertex()
 		},
 		GL_DYNAMIC_DRAW
@@ -153,7 +159,7 @@ int make_texture_resize_work()
 	objectMaterialMeta.create(
 		{
 			objToMaterialMap.data(),
-			__scast(u32, objToMaterialMap.size()),
+			__scast(u32, objToMaterialMap.size() * sizeof(ObjectMaterialDescriptor)),
 			VertexDescriptor::defaultVertex()
 		},
 		GL_DYNAMIC_DRAW
@@ -229,16 +235,15 @@ int make_texture_resize_work()
 
 			if(programStates.refreshSSBOs)
 			{
-				mark(); materialBuffer.bind();
-				mark(); materialBuffer.update(sizeof(Material) * programStates.bytes[5], 
-				{ 
-						&materials[programStates.bytes[5]], 
-						__scast(u32, sizeof(Material)), 
-						{} 
+				materialBuffer.bind();
+				materialBuffer.update(
+					__scast(u32, sizeof(Material) * programStates.bytes[5]),
+					{
+						&materials[programStates.bytes[5]],
+						__scast(u32, sizeof(Material)),
+						{}
 				});
-				mark();
 			}
-
 
 			if(programStates.refreshCompute) {
 				basic_compute.refreshShaderSource(0);
@@ -280,8 +285,7 @@ int make_texture_resize_work()
 /* 
 	Merged FixBlackScreen & Diffusion Branches.
 	Next:
-		* Materials
-		* reflectivity
+		* Materials - Fix the CalculatePixelColorLambertian (3 different material types, needs to be re-written like LambertainOnly)
 		* dynamic objects
 		* Polygons?
 		* dynamic camera?
@@ -352,7 +356,7 @@ int make_texture_resize_work()
 			attenuatedColor = materialVec.xyz;
 
 			// stop the loop if scatter wasn't valid
-			cont = dot(reflectDir, possibleHit.normal) > 0);
+			cont = dot(reflectDir, possibleHit.normal) > 0;
 			finalColor *= mix(vec3(0.0f), attenuatedColor, bvec3(cont));
 		}
 	}

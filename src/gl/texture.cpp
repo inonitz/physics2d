@@ -84,8 +84,8 @@ void TextureBuffer::unbindUnit()
 
 void TextureBuffer::recreateImage(math::vec2u newDims)
 {
-	unbindImage();
-	unbindUnit();
+	// unbindImage();
+	// unbindUnit();
 	info.dims = newDims;
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexImage2D(

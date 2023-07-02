@@ -72,6 +72,12 @@ void Buffer::create(BufferDescriptor const& binfo, u32 usage = GL_STATIC_DRAW)
 
 void Buffer::update(BufferDescriptor const& updateInfo, u32 byteOffset)
 {
+	// markfmt("gl_id: %u\nbyteOffset: %u\ninfo: {\n    .data = %p\n    .count = %u\n}\n",
+	// 	m_id,
+	// 	byteOffset,
+	// 	updateInfo.data,
+	// 	updateInfo.count
+	// );
 	glNamedBufferSubData(m_id, byteOffset, updateInfo.count, updateInfo.data);
 	return;
 }
