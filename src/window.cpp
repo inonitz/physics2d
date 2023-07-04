@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include "window.hpp"
-#include "ImGui1896/imgui_impl_glfw.h"
-#include "ImGui1896/imgui_impl_opengl3.h"
+#include "ImGui/imgui_impl_glfw.h"
+#include "ImGui/imgui_impl_opengl3.h"
 
 
 

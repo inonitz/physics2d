@@ -1,6 +1,6 @@
 #pragma once
 #include <glad/glad.h>
-#include <ImGui1896/imgui.h>
+#include <ImGui/imgui.h>
 #include "context.hpp"
 
 
