@@ -732,6 +732,16 @@ void inverse(
 	mat4f&       out
 );
 
+
+/*
+	Source (God Bless you!): https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+*/
+void inverseSimd(
+	mat4f const& in,
+	mat4f& 		 out
+);
+
+
 #pragma GCC diagnostic pop
 
 

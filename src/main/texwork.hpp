@@ -39,6 +39,7 @@ void renderUI(
 	i32& 			       samplesPerPixel,
 	std::vector<Material>& objectMaterials,
 	u8&                    refreshMaterials,
+	PVMTransform&          sceneCamera,
 	f32&       	  		   randomFloat,
 	math::vec3u const& 	   computeDispatchSize
 );
@@ -113,70 +114,4 @@ inline ComputeGroupSizes computeDispatchSize(math::vec2u const& dims)
 		localWorkgroupSize,
 		{ __scast(u32, tmp_cvt.x), __scast(u32, tmp_cvt.y), 1u }
 	};
-}
-
-
-inline void renderUI(
-	i32& 			   	   diffuseRecursionDepth,
-	i32& 			   	   samplesPerPixel,
-	std::vector<Material>& objectMaterials,
-	u8&                    refreshMaterials,
-	f32&       	   		   randomFloat,
-	math::vec3u const& 	   computeDispatchSize
-) {
-	auto* ctx = getGlobalContext();
-	std::array<i32, 2> windowDims = ctx->glfw.dims;
-	i32 work_grp_inf[7];
-	f32 dt = ctx->glfw.time_dt();
-
-
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0,  &work_grp_inf[0]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1,  &work_grp_inf[1]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2,  &work_grp_inf[2]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0,   &work_grp_inf[3]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1,   &work_grp_inf[4]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2,   &work_grp_inf[5]);
-	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inf[6]);
-	
-	
-	ImGui::BeginGroup();
-	ImGui::BulletText("Currently Using GPU Vendor %s Model %s\n", glad_glGetString(GL_VENDOR), glad_glGetString(GL_RENDERER));
-	ImGui::BulletText("Max work-groups per compute shader: { %10d, %10d, %10d }\n", work_grp_inf[0], work_grp_inf[1], work_grp_inf[2]);
-	ImGui::BulletText("Max work group size:                { %10d, %10d, %10d }\n", work_grp_inf[3], work_grp_inf[4], work_grp_inf[5]);
-	ImGui::BulletText("Max invocations per work group: %d\n", work_grp_inf[6]);
-	ImGui::BulletText("Compute Shader Invoked with %d * %d * %d (%d) Compute Groups\n", 
-		computeDispatchSize.x, 
-		computeDispatchSize.y, 
-		1, 
-		computeDispatchSize.x * computeDispatchSize.y
-	);
-	ImGui::EndGroup();
-	ImGui::BeginGroup();
-	ImGui::Text("Window Resolution is %ux%u\n", windowDims[0], windowDims[1]);
-	ImGui::Text("Rendering at %.02f Frames Per Second (%.05f ms/frame)", (1.0f / dt), (dt * 1000.0f) );
-
-
-	if(ImGui::Button("Refresh =>")) randomFloat = randnorm32f();
-	ImGui::SameLine();
-	ImGui::Text("Generated Float: %.05f", randomFloat);
-	ImGui::SliderInt("Samples Per Pixel ", &samplesPerPixel   , 0, 128);
-	ImGui::SliderInt("Ray Trace Depth   ", &diffuseRecursionDepth, 0, 64 );
-	ImGui::EndGroup();
-
-
-	refreshMaterials = 0;
-	struct CharArray { char __[20]; };
-	static std::vector<CharArray> MaterialNames{objectMaterials.size()};
-	__once(for(size_t i = 0; i < objectMaterials.size(); ++i) { /* Currently the amount of materials is static so this is fine. */
-			sprintf(MaterialNames[i].__, "Material %2d", __scast(u32, i));
-	});
-	ImGui::BeginChild("Object Materials");
-	for(size_t i = 0; i < objectMaterials.size(); ++i) {
-		ImGui::ColorEdit4(MaterialNames[i].__, &objectMaterials[i].x);
-		refreshMaterials = ImGui::IsItemFocused() * __scast(u8, i) + !ImGui::IsItemFocused() * refreshMaterials;
-	}
-	ImGui::EndChild();
-
-
-	return;
 }

@@ -28,6 +28,8 @@ public:
 
 	__force_inline math::mat4f const& constref() const { return view;  }
 	__force_inline math::mat4f const* constptr() const { return &view; }
+	__force_inline math::vec3f const& position() const { return pos;   }
+	__force_inline math::vec3f       lookingAt() const { return pos + front; }
 
 private:
 	__force_inline void recalcView() {

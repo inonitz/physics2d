@@ -86,6 +86,42 @@ struct alignsz(8) SceneData
 	Sphere 			objects[1];
 };
 
+struct CameraTransformV2
+{
+	math::mat4f invView;
+	math::mat4f invPerspective;
+	math::vec3f position;
+};
+
+
+typedef struct __CameraAndPerspectiveStruct
+{
+	Camera            m_view;
+	ProjectionMatrix  m_persp;
+	CameraTransformV2 m_data;
+
+	void create(
+    	f32 fieldOfView,
+    	f32 nearClippingPlane,
+    	f32 farClippingPlane,
+    	math::vec3f const& initialPosition  = { 0.0f, 0.0f,  6.0f },
+    	math::vec3f const& initialDirection = { 0.0f, 0.0f, -1.0f }
+	);
+	void onUpdate(f32 dt);
+	void recalculateProjection(); /* if a change to any of the projection parameters happens. */
+	void writeFinalData(CameraTransformV2& writeTo);
+} PVMTransform;
+
+
+struct alignsz(8) SceneDataV2
+{
+	CameraTransformV2 transform;
+	u32 			  max_size;
+	u32 			  curr_size; 
+	u64 			  reserved;
+	Sphere 			  objects[1];
+};
+
 
 struct globalContext {
 	window 			 glfw;

@@ -28,11 +28,17 @@ struct CameraTransform
     float focal_length; /* Distance from camera origin to camera Screen */
     uint  reserved;
 };
-
+struct CameraTransformV2
+{
+    mat4 invView;
+    mat4 invProj;
+    vec3 origin;
+};
 
 layout(std430, binding=1) readonly buffer SceneData
 {
-    CameraTransform sceneCameraTransform;
+    // CameraTransform sceneCameraTransform;
+    CameraTransformV2 sceneCameraTransform;
     uint            sceneObjMaxLength;
     uint            sceneObjCurrLength;
     uint            reserved[2];
@@ -58,42 +64,27 @@ layout(std430, binding=3) readonly buffer SceneObjectToMaterialBuffer
 };
 
 
+layout(std430, binding=5) uniform SceneBlock { /* Migrate from SSBO to UBOs using this Struct */
+    mat4 cameraInvView;
+    mat4 cameraInvProj;
+    vec3 cameraOrigin;
+    uint activeObjects;
+    uint activeMaterials;
+    uint reserved[2];
+    Sphere   objects[450];          /* length = activeObjects   */
+    Material materials[450];        /* length = activeMaterials */
+    uint     objectToMaterial[450]; /* length = activeObjects   */
+    /* because UBOs can be at-most 16KiB according to the spec, this guarantees 450 Objects & materials AT MOST */
+};
 
 
-vec3 rayAt(in Ray ray, in float t) { return ray.origin + ray.dir * t; }
-Ray  cameraGetRay(CameraTransform cam, vec3 rayOrigin, vec2 uv) /* Camera pointing towards -Z axis */
-{
-    vec3 rayDir;
-    rayDir = cam.position - vec3( (vec2(0.5f) - uv) * cam.viewport, cam.focal_length);
-    return Ray(rayOrigin, rayDir);
-}
 
 
-
-
-
-/* Using trascendenal constants for fun & profit */
 const float c_infinity = 1. / 0.;
 const float c_pi         = 3.14159265358979323846264338327950288;
-const float c_sqrt2      = 1.41421356237309504880;
-const float c_sqrt3      = 1.73205080756887729352;
-const float c_phi        = 1.61803398874989484820;
-const float c_ramanujan  = 262537412640768743.999999999999250073; /* e^( pi * sqrt(163) )*/
-const float c_atan2      = 0.955316618124509278163;
-const float c_chaitin    = 0.0078749969978123844;                 /* avg prob that a rand program will halt */
-const float c_feigenbaum = 2.50290787509589282228;
-
-float degrees_to_radians(float degrees) { return degrees * c_pi / 180.0f; }
 
 
-
-
-uint pcg_hash(in uint x)
-{
-    x = x * 747796405u + 2891336453u;
-    uint word = ((x >> ((x >> 28u) + 4u)) ^ x) * 277803737u;
-    return (word >> 22u) ^ word;
-}
+float toRadians(float degrees) { return degrees * c_pi / 180.0f; }
 
 
 float random( vec2 p )
@@ -102,16 +93,13 @@ float random( vec2 p )
     return fract( cos( mod( 123456789., 1e-7 + 256. * dot(p,r) ) ) );  
 }
 
-
 float uintToNormFloat(uint m) { 
     return uintBitsToFloat((m & 0x007FFFFFu) | 0x3F800000u ) - 1.0f; 
 }
 
-
 float random_norm(vec2 p) {
     return uintToNormFloat(floatBitsToUint(random(p)));
 }
-
 
 vec3 simpleRandUnitSphere(in vec2 texelCoord, uint sampleNum)
 {
@@ -125,11 +113,12 @@ vec3 simpleRandUnitSphere(in vec2 texelCoord, uint sampleNum)
 }
 
 
+vec3 rayAt(in Ray ray, in float t) { return ray.origin + ray.dir * t; }
+
 vec3 reflectRay(in vec3 ray_dir, in vec3 normal)
 {
     return ray_dir - 2 * dot(ray_dir, normal) * normal;
 }
-
 
 vec3 refractRay(in vec3 ray, in vec3 normal, in float lambda)
 {
@@ -146,7 +135,6 @@ float reflectance(in float cos_angle, in float refraction_idx)
     r *= r;
     return r + (1.0f - r) * pow( (1.0f - cos_angle), 5 ); 
 }
-
 
 bvec3 near_zero(in vec3 vec)
 {
@@ -255,7 +243,7 @@ vec3 defaultRayColor(in Ray ray)
 
 
 
-vec3 CalculatePixelColorMaterial(in vec2 texelCoord)
+vec3 CalculatePixelColorMaterial(in vec2 texelCoord, in Ray cameraRay)
 {
     SphereRayIntersectionResult possibleHit;
     Ray  cameraRayAtUV;
@@ -268,7 +256,7 @@ vec3 CalculatePixelColorMaterial(in vec2 texelCoord)
     float refract_ratio, cost, sint;
 
 
-    cameraRayAtUV = cameraGetRay(sceneCameraTransform, sceneCameraTransform.position, texelCoord);
+    cameraRayAtUV = cameraRay;
     for(; i < u_recurseDepth && cont; ++i)
     {
         worldRayIntersection(cameraRayAtUV, possibleHit);
@@ -333,12 +321,23 @@ vec3 CalculatePixelColor(in vec2 texelCoord)
     SphereRayIntersectionResult possibleHit;
     vec3 outColor = vec3(0.0f);
     vec2 currTexel;
+    vec4 texelCameraRayDir;
+    Ray  texelRay;
     const float pixel_samples_inv = 1.0f / float(u_samplesPpx);
 
 
+    texelRay.origin = sceneCameraTransform.origin;
     for(uint sampleIdx = 0; sampleIdx < u_samplesPpx; ++sampleIdx) {
         currTexel = texelCoord + simpleRandUnitSphere(texelCoord, sampleIdx).xz * pixel_samples_inv * pixel_samples_inv;
-        outColor += CalculatePixelColorMaterial(currTexel);
+
+        /* Find out later if its worth pre-computing these vectors on the cpu with threads, or rather creating another compute pass for these. */
+        texelCameraRayDir = vec4(2.0f * currTexel - 1.0f, 1.0f, 1.0f);
+        texelCameraRayDir = sceneCameraTransform.invProj * texelCameraRayDir;
+        texelCameraRayDir = vec4(normalize(texelCameraRayDir.xyz / texelCameraRayDir.w), 0.0f);
+        texelCameraRayDir = sceneCameraTransform.invView * texelCameraRayDir;
+        texelRay.dir = texelCameraRayDir.xyz;
+
+        outColor += CalculatePixelColorMaterial(texelCoord, texelRay);
     }
 
     outColor *= pixel_samples_inv; /* Get Average over All Samples */
@@ -354,7 +353,6 @@ void main()
     /* Image Output Coordinates (pixel uv coord) */
     ivec2 texelCoord  = ivec2(gl_GlobalInvocationID.xy);
     vec2  texelCoordf = vec2(texelCoord) / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy); 
-
 
     finalColor = pow( /* gamma correction */
         CalculatePixelColor(texelCoordf),
