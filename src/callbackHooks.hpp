@@ -7,7 +7,7 @@
 
 
 /* should be probably placed in a different place from all the input-related functions */
-struct defaultCallbacks 
+struct stateChangeCallbacks 
 {
     using generic_error    = GLFWerrorfun;
     using framebuffer_size = GLFWframebuffersizefun;

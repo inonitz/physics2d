@@ -6,7 +6,7 @@
 
 
 
-void window::create(i32 width, i32 height, defaultCallbacks const& glfwOverride)
+void window::create(i32 width, i32 height, stateChangeCallbacks const& glfwOverride)
 {
 	glfwSetErrorCallback(glfwOverride.errorEvent);
 	ifcrashdo(!glfwInit(), 

@@ -251,6 +251,8 @@ typedef double   f64;
 template<typename T> using ref 		 = typename std::conditional<sizeof(T) <= 8, T, T&		>::type;
 template<typename T> using const_ref = typename std::conditional<sizeof(T) <= 8, T, T const&>::type;
 template<typename T> using value_ptr = typename std::conditional<sizeof(T) <= 8, T, T*>::type;
+template<typename T> using imut_type_handle = T const*;
+template<typename T> using mut_type_handle  = T*;
 
 
 template<typename T> constexpr T round2(T v) {

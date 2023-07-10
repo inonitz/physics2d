@@ -38,6 +38,14 @@ struct BufferDescriptor
 };
 
 
+struct ElementBufferRenderData
+{
+	u32 count;
+	u16 gl_type;
+	u16 gl_size;
+};
+
+
 
 
 struct Buffer
@@ -86,9 +94,13 @@ public:
 
 	void create(Buffer& Vertices, Buffer& Indices);
 	void destroy();
-	void bind();
-	void unbind();
+	void bind()   const;
+	void unbind() const;
 
+	
+	ElementBufferRenderData const& getRenderData() const { return m_renderData; }
 protected:
 	u32 m_vao, m_vbo, m_ebo;
+	
+	ElementBufferRenderData m_renderData;
 };

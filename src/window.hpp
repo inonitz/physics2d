@@ -1,12 +1,12 @@
 #pragma once
-#define GLFW_DLL
+// #define GLFW_DLL
 #include "util/base.hpp"
 #include <GLFW/glfw3.h>
 #include "callbackHooks.hpp"
 
 
 
-struct window
+struct Window
 {
 public:
     /* Note: The ImGui code will eventually be moved into a renderer Class/struct, when deemed necessary */
@@ -18,7 +18,7 @@ public:
 
 
 
-    void create(i32 width, i32 height, defaultCallbacks const& link);
+    void create(i32 width, i32 height, stateChangeCallbacks const& link);
     void destroy();
 
     template<typename T> T aspectRatio() const { return dims[0] / ( (T)dims[1] );  }

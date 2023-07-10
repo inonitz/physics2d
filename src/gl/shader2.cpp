@@ -185,8 +185,8 @@ bool Program::compile()
 }
 
 
-void Program::bind()   { glUseProgram(m_id); }
-void Program::unbind() { glUseProgram(0);    }
+void Program::bind()   const { glUseProgram(m_id); }
+void Program::unbind() const { glUseProgram(0);    }
 
 
 void Program::destroy()

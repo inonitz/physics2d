@@ -134,8 +134,8 @@ public:
 	bool compile();
 
 
-	void bind();
-	void unbind();
+	void bind()   const;
+	void unbind() const;
 	void destroy();
 
 

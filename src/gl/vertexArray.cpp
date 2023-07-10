@@ -171,6 +171,12 @@ void VertexArray::create(Buffer& Vertices, Buffer& Indices)
 		);
 		glVertexArrayAttribBinding(m_vao, i, vboBindingPoint);
 	}
+
+	m_renderData = {
+		Indices.m_info.count,
+		Indices.m_info.vinfo.attributes[0].gltype,
+		__scast(u16, Indices.m_info.vinfo.typeSize(0))
+	};
 	return;
 }
 
@@ -183,8 +189,8 @@ void VertexArray::destroy()
 }
 
 
-void VertexArray::bind() { glBindVertexArray(m_vao); }
-void VertexArray::unbind() { glBindVertexArray(0); }
+void VertexArray::bind()   const { glBindVertexArray(m_vao); }
+void VertexArray::unbind() const { glBindVertexArray(0);     }
 
 
 
