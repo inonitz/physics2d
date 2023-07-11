@@ -1,5 +1,6 @@
 #pragma once
 #include "base.hpp"
+#include <immintrin.h>
 #include <array>
 
 

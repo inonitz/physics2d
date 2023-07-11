@@ -6,6 +6,17 @@
 namespace Renderer {
 
 
+notused void RenderManager::create() 
+{
+    
+}
+
+notused void RenderManager::destroy() 
+{
+    return;    
+}
+
+
 void RenderManager::render() const
 {
     auto* ctx = getGlobalContext();
@@ -22,6 +33,11 @@ void RenderManager::render() const
 
 
     return;
+}
+
+void RenderManager::renderImGui() 
+{
+        
 }
 
 

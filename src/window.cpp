@@ -6,7 +6,7 @@
 
 
 
-void window::create(i32 width, i32 height, stateChangeCallbacks const& glfwOverride)
+void Window::create(i32 width, i32 height, stateChangeCallbacks const& glfwOverride)
 {
 	glfwSetErrorCallback(glfwOverride.errorEvent);
 	ifcrashdo(!glfwInit(), 
@@ -66,7 +66,7 @@ void window::create(i32 width, i32 height, stateChangeCallbacks const& glfwOverr
 }
 
 
-void window::destroy()
+void Window::destroy()
 {
     glfwSetWindowShouldClose(handle, true);
 	ImGui_ImplOpenGL3_Shutdown();
@@ -78,24 +78,24 @@ void window::destroy()
 }
 
 
-void window::lockCursor() const {
+void Window::lockCursor() const {
 	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 
-void window::unlockCursor() const {
+void Window::unlockCursor() const {
 	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 
-void window::setCursorMode(bool lock) const
+void Window::setCursorMode(bool lock) const
 {
 	i32 chosenMacro = lock * GLFW_CURSOR_DISABLED + !(lock) * GLFW_CURSOR_NORMAL;
 	glfwSetInputMode(handle, GLFW_CURSOR, chosenMacro);
 }
 
 
-void window::procUpcomingEvents() 
+void Window::procUpcomingEvents() 
 {
 	/* begin frame */
 	// markstr("GLFW ==> Begin Frame!")
@@ -109,7 +109,7 @@ void window::procUpcomingEvents()
 }
 
 
-void window::procOngoingEvents() 
+void Window::procOngoingEvents() 
 {
 	/* end frame */ 
 	ImGui::Render();

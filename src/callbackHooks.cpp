@@ -182,7 +182,6 @@ void glfw_framebuffer_size_callback(__unused GLFWwindow* handle, i32 w, i32 h)
 	ctx->glfw.windowMinimized = (w == 0) || (h == 0); 
 	ctx->glfw.windowSizeChange = !ctx->glfw.windowMinimized && (  (ctx->glfw.dims[0] != w) || (ctx->glfw.dims[1] != h)  );
 	ctx->glfw.dims = { w, h };
-	ctx->persp.__.aspectRatio = w / (f32)h;
 	return;
 }
 

@@ -111,7 +111,8 @@ void createRectangleData(RectangleData* rectData)
     };
 
 
-    const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//sample_img.jpg";
+    // const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//sample_img.jpg";
+    const char* texturePath = "C://CTools//Projects//physics2d//assets//sample_img.jpg";
     i32 TEXW, TEXH, TEXCHANNEL;
     u8*  textureBuffer;
     f32* textureBufferAsFloat;
