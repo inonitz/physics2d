@@ -62,16 +62,18 @@ public:
 };
 
 
-static Vector<float, 2 > temporaryBufferVec2f{};
-static Vector<float, 3 > temporaryBufferVec3f{};
-static Vector<float, 4 > temporaryBufferVec4f{};
-static Vector<float, 16> temporaryBufferMat4f{};
-static Vector<u32,   2 > temporaryBufferVec2u{};
-static Vector<u32,   3 > temporaryBufferVec3u{};
-static Vector<u32,   4 > temporaryBufferVec4u{};
-static Vector<i32,   2 > temporaryBufferVec2i{};
-static Vector<i32,   3 > temporaryBufferVec3i{};
-static Vector<i32,   4 > temporaryBufferVec4i{};
+thread_local static Vector<float, 2 > temporaryBufferVec2f{};
+thread_local static Vector<float, 3 > temporaryBufferVec3f{};
+thread_local static Vector<float, 4 > temporaryBufferVec4f{};
+thread_local static Vector<float, 4 > temporaryBufferMat2f{};
+thread_local static Vector<float, 9 > temporaryBufferMat3f{};
+thread_local static Vector<float, 16> temporaryBufferMat4f{};
+thread_local static Vector<u32,   2 > temporaryBufferVec2u{};
+thread_local static Vector<u32,   3 > temporaryBufferVec3u{};
+thread_local static Vector<u32,   4 > temporaryBufferVec4u{};
+thread_local static Vector<i32,   2 > temporaryBufferVec2i{};
+thread_local static Vector<i32,   3 > temporaryBufferVec3i{};
+thread_local static Vector<i32,   4 > temporaryBufferVec4i{};
 
 
 #define SET_MULTIPLE_VALUES 4llu
@@ -466,6 +468,76 @@ GENERATE_NEGATE_FUNC(3, i32, 3i)
 
 
 
+
+struct mat2f 
+{
+	using underlying_buffer = Vector<float, 4>;
+	union {
+		Vector<float, 4> mem;
+		struct { vec2f row[2]; };
+		struct { float x0,   y0,  x1,  y1; };
+		struct { float m00, m01, m10, m11; };
+		vec4f homogenised;
+	};
+
+
+	mat2f() : mem() 
+	{ 
+		/* Identity Matrix initialization is pretty useful. */
+		mem[0] = 1.0f; 
+		mem[2] = 1.0f;
+		return;
+	}
+	mat2f(float value) : mem(value) {}
+	mat2f(float x0, float y0, float x1, float y1) : homogenised{ x0, y0, x1, y1 } {}
+	mat2f(vec2f const& a, vec2f const& b) 		  : row{ a, b } {}
+	mat2f(const float* validAddr) {
+		memcpy(mem.begin(), validAddr, mem.bytes());
+		return;
+	}
+	mat2f(std::array<float, 4> const& arr) : mat2f(arr.begin()) {}
+	mat2f(Vector<float, 4>     const& vec) : mem(vec)           {}
+	mat2f(mat2f 			   const& cpy) : mem(cpy.mem) 	    {}
+	mat2f& operator=(const mat2f& cpy) {
+		homogenised = cpy.homogenised;
+		return *this;
+	}
+
+
+	__force_inline underlying_buffer& operator+(mat2f const& b) { add(mem, b.mem, temporaryBufferMat2f); return temporaryBufferMat2f; }
+	__force_inline underlying_buffer& operator-(mat2f const& b) { sub(mem, b.mem, temporaryBufferMat2f); return temporaryBufferMat2f; }
+	__force_inline underlying_buffer& operator*(mat2f const& b) { mul(mem, b.mem, temporaryBufferMat2f); return temporaryBufferMat2f; }
+	__force_inline underlying_buffer& operator*(float        b) { mul(mem, b,     temporaryBufferMat2f); return temporaryBufferMat2f; }
+	__force_inline underlying_buffer& operator/(float        b) { div(mem, b,     temporaryBufferMat2f); return temporaryBufferMat2f; }
+
+	__force_inline 		 vec2f  column(	   uint8_t idx		   ) 	   { ifcrashdbg(idx >= 2); return { mem[idx], mem[idx + 2] }; }
+	__force_inline const vec2f  column(	   uint8_t idx		   ) const { ifcrashdbg(idx >= 2); return { mem[idx], mem[idx + 2] }; }
+	__force_inline       vec2f& operator[](uint8_t idx	       )       { ifcrashdbg(idx >= 2); return row[idx];       }
+	__force_inline const vec2f& operator[](uint8_t idx	       ) const { ifcrashdbg(idx >= 2); return row[idx];       }
+	__force_inline float&       operator()(uint8_t i, uint8_t j)       { 					   return mem[i * 2 + j]; }
+	__force_inline const float& operator()(uint8_t i, uint8_t j) const { 					   return mem[i * 2 + j]; }
+
+		  float*        begin()        { return mem.begin();  }
+		  float*        end()          { return mem.end();    }
+	const float*        begin()  const { return mem.begin();  }
+	const float*        end()    const { return mem.end();    }
+	constexpr size_t    bytes()  const { return mem.bytes();  }
+	constexpr size_t    length() const { return mem.len();    }
+	__force_inline void print()  const 
+	{ 
+		printf("mat2f %p:\n", (void*)begin());
+		printf("( %-5.05f, %-5.05f )\n", row[0].x, row[0].y);
+		printf("( %-5.05f, %-5.05f )\n", row[1].x, row[1].y);
+		return;
+	}
+};
+
+
+__force_inline mat2f::underlying_buffer& operator*(float a, mat2f const& b) { mul(b.mem, a, temporaryBufferMat2f); return temporaryBufferMat2f; }
+
+
+
+
 struct mat4f 
 {
 	using underlying_buffer = Vector<float, 16>;
@@ -526,6 +598,14 @@ struct mat4f
 		memcpy(mem.begin(), validAddr, mem.bytes());
 		return;
 	}
+	mat4f(mat2f const& promote) : mem() {
+		mem[ 0] = promote.m00;
+		mem[ 1] = promote.m01;
+		mem[ 4] = promote.m10;
+		mem[ 5] = promote.m11; 
+		mem[10] = 1.0f; 
+		mem[15] = 1.0f; 
+	}
 	mat4f(std::array<float, 16> const& arr) : mat4f(arr.begin()) {}
 	mat4f(Vector<float, 16>     const& vec) : mem(vec)           {}
 	mat4f(mat4f 			    const& cpy) : mem(cpy.mem) 	     {}
@@ -569,8 +649,14 @@ struct mat4f
 __force_inline mat4f::underlying_buffer& operator*(float a, mat4f const& b) { mul(b.mem, a, temporaryBufferMat4f); return temporaryBufferMat4f; }
 
 
+
+
 void MultiplyMat4Vec4(vec4f& a, mat4f& b, vec4f& out);
 void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out);
+void MultiplyMat2Vec2(vec2f& a, mat2f& b, vec2f& out);
+void MultiplyMat2Mat2(mat2f& a, mat2f& b, mat2f& out);
+
+
 
 
 /*
@@ -602,14 +688,31 @@ void translate (vec3f const& translate, mat4f& out);
 */
 void scale     (vec3f const& scale,     mat4f& out);
 
+
 /*
-	Returns the following matrix in mat4f& out:
-	given mat4f const& in = {
+	Returns the following matrix in mat2f& out (where s = scale):
+	[ s.x,  0 ],
+	[  0,  s.y]
+*/
+void scale     (vec2f const& scale, 	mat2f& out);
+
+
+/*
+	Returns the following matrix in mat2f out (where t = radians(angle) ):
+	[ cos(t), -sin(t) ],
+	[ sin(t),  cos(t) ]
+*/
+void rotate2d(f32 angle, mat2f& out);
+
+
+/*
+	Returns the following matrix in mat4f& out (where 
+	in = [
 		m00, m01, m02, m03,
 		m04, m05, m06, m07,
 		m08, m09, m10, m11,
 		m12, m13, m14, m15
-	} out ==>
+	]):
 	[ m00, m04, m08, m12 ],
 	[ m01, m05, m09, m13 ],
 	[ m02, m06, m10, m14 ],
@@ -619,14 +722,38 @@ void transposed(mat4f const& in, 		mat4f& out);
 
 
 /*
-	same as transposed(), except that it expects only one argument (the matrix to transpose)
+	Same as tranposed(); Uses temporary mat4f to directly modify inout.
 */
 void transpose (					  mat4f& inout);
 
 
 /* 
-	Explanation & Derivation:
+	Full Explanation & Derivation:
 	https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix
+	Quick Derivation (If Link doesn't work, or you're lazy :| ):
+	A. glFrustum(left, right, top, bottom, near, far):
+		[ 2n/(r - l)     0,      (r + l)/(r - l),      0      ],
+		[     0,     2n/(t - b), (t + b)/(t - b),      0      ],
+		[     0,         0,      (f + n)/(n - f), 2fn/(n - f) ],
+		[     0,         0,            -1,             0,     ]
+	B. Take glFrustum(...) and plug
+		t = tan(fovy/2) * near
+		b = -1 * t
+		r = t * windowAspectRatio
+		l = -1 * r
+
+
+	C. Returns the following matrix in mat4f& out (where 
+		A = aspectRatio,
+		t = radians(fovy),
+		n = near, 
+		f = far
+	):
+	[ cot(t / 2) / A,      0, 	       0,         0     ],
+	[      0,         cot(t / 2),      0,         0     ],
+	[      0,   		   0,     (n+f)/(n-f) 2fn/(n-f) ],
+	[	   0,              0,         -1,         0     ]
+
 */
 void perspective(
 	float  aspectRatio, 
@@ -638,16 +765,48 @@ void perspective(
 
 
 /* 
-	Calculated formula using 4x4 inverse formula + some regex + python str replace:
-	where m%d%d = projection matrix with %d as subscripts (indices).
-	{
-		1/m00,   0,     0,          0,
-		0,     1/m11,   0,          0,
-		0,       0,     0,        1/m32,
-		0,       0,   1/m23, -m22/(m23 * m32)
-	}
+	[NOTE]: Formula Calculated using 4x4 inverse formula + regex + python str replace:
+	Returns the following matrix in mat4f& out (where m%d%d = in[i][j]):
+	[ 1/m00,   0,     0,          0,        ]
+	[   0,   1/m11,   0,          0,        ]
+	[   0,     0,     0,        1/m32,      ]
+	[   0,     0,   1/m23, -m22/(m23 * m32) ]
 */
 void inv_perspective(mat4f const& in, mat4f& out);
+
+
+
+/*
+	Explanation & Derivation:
+	https://learnwebgl.brown37.net/08_projections/projections_ortho.html
+
+	Returns the following matrix in mat4f& out (where
+		l, r = leftRight[0], leftRight[1]
+		t, b = topBottom[0], topBottom[1],
+		n, f = nearFar[0]  ,   nearFar[1]
+	):
+	[ 2/(r - l),      0, 	    0, 	   (r + l)/(l - r) ],
+	[     0,      2/(t - b),    0, 	   (t + b)/(b - t) ],
+	[     0,          0,	2/(n - f), (f + n)/(n - f) ],
+	[     0,          0,        0, 	   	      1 	   ]
+*/
+void orthographic(
+	vec2f  leftRight, 
+	vec2f  topBottom, 
+	vec2f  nearFar,
+	mat4f& out
+);
+
+
+/*
+	Same as function above, just easier interface.
+*/
+void orthographic(
+	f32 left,   f32 right, 
+	f32 bottom, f32 top,
+	f32 near,   f32 far,
+	mat4f& out
+);
 
 
 
@@ -739,6 +898,21 @@ void inverse(
 void inverseSimd(
 	mat4f const& in,
 	mat4f& 		 out
+);
+
+
+/* 
+	Returns the 2D Model Matrix 'TRS' in mat2f out (where t = radians(rotationAngle), s = scale, t = translate):
+	[ s.x * cos(t), -s.y * sin(t), t.x, 0 ],
+	[ s.x * sin(t),  s.y * cos(t), t.y, 0 ],
+	[     0,             0, 	    1,  0 ],
+	[     0,             0, 	    0,  1 ]
+*/
+void modelMatrix2d(
+	math::vec2f const& translate,
+	math::vec2f const& scale,
+	f32 			   rotationAngle,
+	math::mat4f& 	   out
 );
 
 

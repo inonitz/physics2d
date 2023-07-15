@@ -34,12 +34,54 @@ void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out) {
 }
 
 
+void MultiplyMat2Vec2(vec2f& a, mat2f& b, vec2f& out)
+{
+	/* 
+		I HOPE this will get optimized into:
+			promote __m64[a] -> __m128[tmp]
+			shuffle __m128[tmp]
+			multiply 	   __m128[tmp], __m128[b]   -> __m128[tmp]
+			horizontal_add __m128[tmp], __m128[tmp] -> __m128[tmp]
+			demote __m128[tmp].xy -> __m64[out]
+	*/
+	vec4f tmp = { a.x, a.x, a.y, a.y };
+	tmp *= b.homogenised;
+	out = {
+		tmp.x + tmp.y,
+		tmp.z + tmp.w
+	};
+	return;
+}
+
+
+void MultiplyMat2Mat2(mat2f& a, mat2f& b, mat2f& out)
+{
+	vec4f tmp0, tmp1, btrans;
+	btrans = { b.x0, b.x1, b.y0, b.y1 };
+	tmp0 = { a.m00, a.m01, a.m00, a.m01 };
+	tmp1 = { a.m10, a.m11, a.m10, a.m11 };
+	tmp0 *= btrans;
+	tmp1 *= btrans;
+	out.row[0] = { tmp0.x + tmp0.y, tmp0.z + tmp0.w };
+	out.row[1] = { tmp1.x + tmp1.y, tmp1.z + tmp1.w };
+	return;
+}
+
+
+
+
 void identity(mat4f& out) {
 	out.mem.zero();
 	out.m00 = 1.0f;
 	out.m11 = 1.0f;
 	out.m22 = 1.0f;
 	out.m33 = 1.0f;
+	return;
+}
+
+
+void identity(mat2f& out) {
+	out = { 1.0f, 0.0f, 1.0f, 0.0f };
 	return;
 }
 
@@ -63,6 +105,27 @@ void scale(vec3f const& scale, mat4f& out) {
 }
 
 
+void scale(vec2f const& scale, mat2f& out)
+{
+	out.mem.zero();
+	out.m00 = scale.x;
+	out.m11 = scale.y;
+	return;
+}
+
+
+void rotate2d(f32 angle, mat2f& out)
+{
+	angle = radians(angle);
+	out.m00 = std::cosf(angle);
+	out.m01 = std::sinf(angle);
+	out.m11 = out.m00;
+	out.m10 = out.m01;
+	out.m01 *= -1.0f;
+	return;
+}
+
+
 void transposed(mat4f const& in, mat4f& out) {
 	for(size_t i = 0; i < 4; ++i) {
 		out(i, 0) = in(0, i);
@@ -81,6 +144,24 @@ void transpose(mat4f& inout) {
 		inout(i, 2) = tmp(2, i);
 		inout(i, 3) = tmp(3, i);
 	}
+	return;
+}
+
+
+void transposed(mat2f const& in, mat2f& out) {
+	out = { 
+		in.x0, in.x1, 
+		in.y0, in.y1 
+	};
+	return;
+}
+
+
+void transpose(mat2f& inout) {
+	/* I'm sure this won't get compiled to a shuffle_ps but whatever... */
+	vec2f tmp = { inout.x1, inout.y0 };
+	inout.m01 = tmp.x;
+	inout.m10 = tmp.y;
 	return;
 }
 
@@ -121,6 +202,49 @@ void inv_perspective(const mat4f &in, mat4f &out)
 	out.m23 = inXY.m2;
 	out.m32 = inXY.m3;
 	out.m33 = -in(2, 2) * inXY.m2 * inXY.m3; 
+	return;
+}
+
+
+void orthographic(
+	vec2f  leftRight, 
+	vec2f  topBottom, 
+	vec2f  nearFar,
+	mat4f& out
+) {
+	/* 
+		[NOTE]:
+		Would prob be more efficient to create a tmp mat4, 
+		set it and copy the whole cache line directly to memory,
+		instead of writing each float individually to memory 
+		(
+			The latter is the way its done now in code, 
+			although who knows how the compiler will handle it :/
+		)
+	*/
+	f32 rml = 1.0f / (leftRight[1] - leftRight[0]);
+	f32 tmb = 1.0f / (topBottom[0] - topBottom[1]);
+	f32 nmf = 1.0f / (nearFar[0]   - nearFar[1]  );
+	out.mem.zero();
+
+	out.m00 = 2.0f * rml;
+	out.m11 = 2.0f * tmb;
+	out.m22 = 2.0f * nmf;
+	out.m33 = 1.0f;
+	out.m03 = -1.0f * (leftRight[1] + leftRight[0]) * rml;
+	out.m13 = -1.0f * (topBottom[0] + topBottom[1]) * tmb;
+	out.m23 =         (nearFar[0]   + nearFar[1]  ) * nmf;
+	return;
+}
+
+
+void orthographic(
+	f32 left,   f32 right, 
+	f32 bottom, f32 top,
+	f32 near,   f32 far,
+	mat4f& out
+) {
+	orthographic({ left, right }, { top, bottom }, { near, far }, out);
 	return;
 }
 
@@ -172,8 +296,8 @@ void inv_lookAt(
 	vec3f forward, right, newup, trans;
 
 	/* Same as lookAt */
-	forward = eyePos - at; 		         forward.normalize();
-	right   = cross(up, forward);   right.normalize();
+	forward = eyePos - at; 		  forward.normalize();
+	right   = cross(up, forward); right.normalize();
 	newup   = cross(forward, right);
 	
 	/* Reset the Matrix (out.m33 = 1.0f is the important part )*/
@@ -368,6 +492,26 @@ void inverseSimd(
 #undef VecSwizzleMask
 #undef MakeShuffleMask
 
+
+
+
+void modelMatrix2d(
+	math::vec2f const& translate,
+	math::vec2f const& scaling,
+	f32 			   rotationAngle,
+	math::mat4f& 	   out
+) {
+	/* To multiply a vec2f by this matrix promote it to { v.x, v.y, 0.0f, 1.0f } to keep the translation component */
+	math::mat2f s, r, rs;
+	rotate2d(rotationAngle, r);
+	scale(scaling, s);
+	MultiplyMat2Mat2(r, s, rs);
+
+	out = mat4f{rs};
+	out.m03 = translate.x;
+	out.m13 = translate.y;
+	return;
+}
 
 
 

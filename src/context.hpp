@@ -1,15 +1,18 @@
 #pragma once
 #include "window.hpp"
 #include "gl/shader2.hpp"
+#include "gl/renderer.hpp"
 
 
 
 
 struct globalContext
 {
-	Window  glfw;
-	Program shader;
-	size_t  frameIndex;
+	using Renderer = Renderer::RenderManager;
+	Window   glfw;
+	Program  shader;
+	Renderer renderer;
+	size_t   frameIndex;
 };
 
 

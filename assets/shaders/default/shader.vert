@@ -1,13 +1,22 @@
 #version 460 core
-in  vec4 PosTex;
-out vec2 TexCoords;
+layout(location = 0) in  vec4 PosTex;
+layout(location = 0) out vec2 TexCoords;
 
 
 uniform mat4 modelMatrix;
+uniform mat4 view;
+uniform mat4 projection;
 
 
 void main()
 {
-	gl_Position = modelMatrix * vec4(PosTex.xy, 0.0f, 1.0f);
+	vec2 vertexPosition = PosTex.xy;
+	vec4 vpos4 = vec4(vertexPosition, 0.0f, 1.0f);
+
+	// vpos4 = projection * view * modelMatrix * vpos4;
+	vpos4 = modelMatrix * vpos4;
+	// vpos4 = projection * vpos4;
+
+	gl_Position = vpos4;
 	TexCoords   = PosTex.zw;
 }

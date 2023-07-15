@@ -26,6 +26,11 @@ public:
     bool shouldClose()       const { return glfwWindowShouldClose(handle); }
     bool minimized()         const { return windowMinimized;                       }
     bool windowSizeChanged() const { return windowSizeChange;                      }
+    void dimensions(u32* out) const { 
+        out[0] = __scast(u32, dims[0]); 
+        out[1] = __scast(u32, dims[1]);
+        return;
+    }
 
     __force_inline void close() const { glfwSetWindowShouldClose(handle, true); }
     void lockCursor() const;
