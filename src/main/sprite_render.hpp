@@ -17,8 +17,7 @@ struct RectangleData
 
 globalContext* createDefaultContext(math::vec2u windowSize);
 void           createRectangleData(RectangleData* rectData);
-
-
-
+void           destroyRectangleData(RectangleData* rectData);
+void           destroyDefaultContext();
 
 int sprite_render(); /* main function in .cpp file */

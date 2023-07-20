@@ -36,15 +36,14 @@ void RenderManager::render() const
     ctx->shader.bind();
     for(auto const& obj : m_targets)
     {
-        obj->texture->bindToUnit(0);
-        ctx->shader.uniform1i("uTexture", 0);
+        obj->texture->bindToUnit(1);
+        ctx->shader.uniform1i("uTexture", 1);
         ctx->shader.uniformMatrix4fv("modelMatrix", obj->transform->TRS);
         ctx->shader.uniformMatrix4fv("view", tmp2);
         ctx->shader.uniformMatrix4fv("projection", m_transform.proj);
         obj->vertexData->bind();
         
         currentIBOdata = obj->vertexData->getRenderData();
-        // markfmt("currentIBOData: %u %u %u", currentIBOdata.count, currentIBOdata.gl_size, currentIBOdata.gl_type);
         glDrawElements(GL_TRIANGLES, currentIBOdata.count, currentIBOdata.gl_type, nullptr);
     }
 
@@ -74,8 +73,10 @@ void RenderManager::renderImGui()
     
     ImGui::BeginGroup();
     shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Near,   Far  ", m_transform.nf.begin(), -10.0f, 10.0f);
-    shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Bottom, Top  ", m_transform.bt.begin(), -10.0f, 10.0f);
-    shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Left,   Right", m_transform.lr.begin(), -10.0f, 10.0f);
+    // shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Bottom, Top  ", m_transform.bt.begin(), -10.0f, 10.0f);
+    // shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Left,   Right", m_transform.lr.begin(), -10.0f, 10.0f);
+    shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Bottom, Top  ", m_transform.bt.begin(), 0.0f, winDims[1]);
+    shouldRecomputeTransform = shouldRecomputeTransform || ImGui::SliderFloat2("Left,   Right", m_transform.lr.begin(), 0.0f, winDims[0]);
     if(shouldRecomputeTransform) {
         math::orthographic(m_transform.lr.x, m_transform.lr.y, m_transform.bt.x, m_transform.bt.y, m_transform.nf.x, m_transform.nf.y, m_transform.proj);
     }

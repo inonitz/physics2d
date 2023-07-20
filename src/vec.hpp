@@ -661,38 +661,38 @@ void MultiplyMat2Mat2(mat2f& a, mat2f& b, mat2f& out);
 
 /*
 	Returns the following matrix in mat4f& out:
-	[ 1, 0, 0, 0],
-	[ 0, 1, 0, 0],
-	[ 0, 0, 1, 0],
-	[ 0, 0, 0, 1]
+	[ 1, 0, 0, 0 ],
+	[ 0, 1, 0, 0 ],
+	[ 0, 0, 1, 0 ],
+	[ 0, 0, 0, 1 ]
 */
 void identity  (					    mat4f& out);
 
 
 /*
 	Returns the following matrix in mat4f& out (where t = translate):
-	[ 1, 0, 0, t.x],
-	[ 0, 1, 0, t.y],
-	[ 0, 0, 1, t.z],
-	[ 0, 0, 0, 1  ]
+	[ 1, 0, 0, t.x ],
+	[ 0, 1, 0, t.y ],
+	[ 0, 0, 1, t.z ],
+	[ 0, 0, 0, 1   ]
 */
 void translate (vec3f const& translate, mat4f& out);
 
 
 /*
 	Returns the following matrix in mat4f& out (where s = scale):
-	[ s.x, 0,   0,   0],
-	[  0, s.y,  0,   0],
-	[  0,  0,  s.z,  0],
-	[  0,  0,   0,   1]
+	[ s.x, 0,   0,   0 ],
+	[  0, s.y,  0,   0 ],
+	[  0,  0,  s.z,  0 ],
+	[  0,  0,   0,   1 ]
 */
 void scale     (vec3f const& scale,     mat4f& out);
 
 
 /*
 	Returns the following matrix in mat2f& out (where s = scale):
-	[ s.x,  0 ],
-	[  0,  s.y]
+	[ s.x,  0  ],
+	[  0,  s.y ]
 */
 void scale     (vec2f const& scale, 	mat2f& out);
 
@@ -765,7 +765,7 @@ void perspective(
 
 
 /* 
-	[NOTE]: Formula Calculated using 4x4 inverse formula + regex + python str replace:
+	[NOTE]: Formula Calculated using 4x4 inverse formula + regex + python str replace.
 	Returns the following matrix in mat4f& out (where m%d%d = in[i][j]):
 	[ 1/m00,   0,     0,          0,        ]
 	[   0,   1/m11,   0,          0,        ]

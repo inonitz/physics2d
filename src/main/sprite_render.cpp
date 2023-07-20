@@ -54,7 +54,8 @@ int sprite_render()
         ctx->glfw.procOngoingEvents();
         ++ctx->frameIndex;
     }
-    ctx->glfw.close();
+    destroyRectangleData(&rectObject);
+    destroyDefaultContext();
     return 0;
 }
 
@@ -79,21 +80,25 @@ globalContext* createDefaultContext(math::vec2u windowSize)
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(gl_debug_message_callback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+		// glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	);
 	glEnable(GL_DEPTH_TEST); 
 	glClearColor(0.45f, 1.05f, 0.60f, 1.00f);
+    glEnable(GL_BLEND);
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
 
     ctx->shader.createFrom({
-        // { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.vert", GL_VERTEX_SHADER   },
-        // { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.frag", GL_FRAGMENT_SHADER }
-        { "C://CTools//Projects//physics2d//assets//shaders//default/shader.vert", GL_VERTEX_SHADER   },
-        { "C://CTools//Projects//physics2d//assets//shaders//default/shader.frag", GL_FRAGMENT_SHADER }
+        { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.vert", GL_VERTEX_SHADER   },
+        { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.frag", GL_FRAGMENT_SHADER }
+        // { "C://CTools//Projects//physics2d//assets//shaders//default/shader.vert", GL_VERTEX_SHADER   },
+        // { "C://CTools//Projects//physics2d//assets//shaders//default/shader.frag", GL_FRAGMENT_SHADER }
         
     });
     ifcrash(ctx->shader.compile() == GL_FALSE);
-    ctx->renderer.create(-2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
+    // ctx->renderer.create(-2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
+    ctx->renderer.create(0.0f, __scast(f32, ctx->glfw.dims[0]), 0.0f, __scast(f32, ctx->glfw.dims[1]), -1.0f, 1.0f);
 
     return ctx;
 }
@@ -101,20 +106,26 @@ globalContext* createDefaultContext(math::vec2u windowSize)
 
 void createRectangleData(RectangleData* rectData)
 {
+    // constexpr std::array<f32, 16> vertices = {
+    //   	-0.75f, -0.75f, 0.0f, 0.0f,
+	// 	-0.75f,  0.75f, 0.0f, 1.0f,
+	// 	 0.75f,  0.75f, 1.0f, 1.0f,
+	// 	 0.75f, -0.75f, 1.0f, 0.0f,
+    // };
     constexpr std::array<f32, 16> vertices = {
-        -0.75f, -0.75f, 0.0f, 0.0f,
-         0.75f, -0.75f, 1.0f, 0.0f,
-         0.75f,  0.75f, 1.0f, 1.0f,
-        -0.75f,  0.75f, 0.0f, 1.0f,
+      	-20.0f, -20.0f,  0.0f, 0.0f,
+		-20.0f,  20.0f,  0.0f, 1.0f,
+		 20.0f,  20.0f,  1.0f, 1.0f,
+		 20.0f, -20.0f,  1.0f, 0.0f,
     };
     constexpr std::array<u32, 6> indices = {
-        0, 1, 2, /* first  triangle */
-        2 ,3, 2  /* second triangle */
+        0, 2, 1,
+		0, 3, 2
     };
 
 
-    // const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//sample_img.jpg";
-    const char* texturePath = "C://CTools//Projects//physics2d//assets//white_paper.jpg";
+    const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//circle-512.png";
+    // const char* texturePath = "C://CTools//Projects//physics2d//assets//white_paper.jpg";
     i32 TEXW, TEXH, TEXCHANNEL;
     u8*  textureBuffer;
     f32* textureBufferAsFloat;
@@ -153,13 +164,39 @@ void createRectangleData(RectangleData* rectData)
     rectData->rectVAO.create(rectData->vertex, rectData->indices);
     rectData->transform = {
         math::vec2f{0.0f, 0.0f},
-        math::vec2f{0.3f},
+        math::vec2f{0.02f},
         0.0f,
         {}
     };
-    math::identity(rectData->transform.TRS);
-    rectData->transform.TRS.print();
+    math::modelMatrix2d(
+        rectData->transform.position,
+        rectData->transform.scale,
+        rectData->transform.rotateAngle,
+        rectData->transform.TRS
+    );
+
+
     afree_t(textureBufferAsFloat);
+    return;
+}
+
+
+void destroyRectangleData(RectangleData* rectData)
+{
+    rectData->texture.destroy();
+    rectData->vertex.destroy();
+    rectData->indices.destroy();
+    rectData->rectVAO.destroy();
+    return;
+}
+
+
+void destroyDefaultContext()
+{
+    auto* ctx = getGlobalContext();
+    ctx->renderer.destroy();
+    ctx->shader.destroy();
+    ctx->glfw.destroy();
     return;
 }
 
