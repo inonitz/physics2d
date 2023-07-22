@@ -651,10 +651,10 @@ __force_inline mat4f::underlying_buffer& operator*(float a, mat4f const& b) { mu
 
 
 
-void MultiplyMat4Vec4(vec4f& a, mat4f& b, vec4f& out);
-void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out);
-void MultiplyMat2Vec2(vec2f& a, mat2f& b, vec2f& out);
-void MultiplyMat2Mat2(mat2f& a, mat2f& b, mat2f& out);
+void MultiplyMat4Vec4(vec4f const& a, mat4f const& b, vec4f& out);
+void MultiplyMat4Mat4(mat4f const& a, mat4f const& b, mat4f& out);
+void MultiplyMat2Vec2(vec2f const& a, mat2f const& b, vec2f& out);
+void MultiplyMat2Mat2(mat2f const& a, mat2f const& b, mat2f& out);
 
 
 

@@ -7,7 +7,7 @@ NAMESPACE_MATH_BEGIN
 
 
 
-void MultiplyMat4Vec4(vec4f& a, mat4f& b, vec4f& out) {
+void MultiplyMat4Vec4(vec4f const& a, mat4f const& b, vec4f& out) {
 	out.x = dot(a, b.column(0));
 	out.y = dot(a, b.column(1));
 	out.z = dot(a, b.column(2));
@@ -15,7 +15,7 @@ void MultiplyMat4Vec4(vec4f& a, mat4f& b, vec4f& out) {
 }
 
 
-void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out) {
+void MultiplyMat4Mat4(mat4f const& a, mat4f const& b, mat4f& out) {
 	mat4f fetch_btransposed = {
 		b.column(0),
 		b.column(1),
@@ -34,7 +34,7 @@ void MultiplyMat4Mat4(mat4f& a, mat4f& b, mat4f& out) {
 }
 
 
-void MultiplyMat2Vec2(vec2f& a, mat2f& b, vec2f& out)
+void MultiplyMat2Vec2(vec2f const& a, mat2f const& b, vec2f& out)
 {
 	/* 
 		I HOPE this will get optimized into:
@@ -54,7 +54,7 @@ void MultiplyMat2Vec2(vec2f& a, mat2f& b, vec2f& out)
 }
 
 
-void MultiplyMat2Mat2(mat2f& a, mat2f& b, mat2f& out)
+void MultiplyMat2Mat2(mat2f const& a, mat2f const& b, mat2f& out)
 {
 	vec4f tmp0, tmp1, btrans;
 	btrans = { b.x0, b.x1, b.y0, b.y1 };

@@ -8,7 +8,7 @@ bool loadFile(
 	char*		out   /* Where to place the file contents (Buffer of Min-Size 'size')      */
 ) {
 	namespace fs = std::filesystem;
-	ifcrashfmt(!fs::exists(path), "loadFile() => Couldn't find Path[%s]\n", path);
+	ifcrashfmt(!fs::exists(path), "loadFile() => Couldn't find Path [%s]\n", path);
 
 	FILE*  file;
 	size_t fsize = fs::file_size(path);
@@ -18,7 +18,7 @@ bool loadFile(
 		return false;
 	}
 	file = fopen(path, "rb");
-	ifcrashfmt(file == nullptr, "Couldn't get handle to file at Path[%s]\n", path);
+	ifcrashfmt(file == nullptr, "Couldn't get handle to file at Path [%s]\n", path);
 
 
 	fsize = fread(out, sizeof(u8), *size, file);

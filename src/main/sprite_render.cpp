@@ -90,10 +90,10 @@ globalContext* createDefaultContext(math::vec2u windowSize)
 
 
     ctx->shader.createFrom({
-        { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.vert", GL_VERTEX_SHADER   },
-        { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.frag", GL_FRAGMENT_SHADER }
-        // { "C://CTools//Projects//physics2d//assets//shaders//default/shader.vert", GL_VERTEX_SHADER   },
-        // { "C://CTools//Projects//physics2d//assets//shaders//default/shader.frag", GL_FRAGMENT_SHADER }
+        // { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.vert", GL_VERTEX_SHADER   },
+        // { "C://Program Files//Programming Utillities//CProjects//physics2d//assets//shaders//default//shader.frag", GL_FRAGMENT_SHADER }
+        { "C://CTools//Projects//physics2d//assets//shaders//default/shader.vert", GL_VERTEX_SHADER   },
+        { "C://CTools//Projects//physics2d//assets//shaders//default/shader.frag", GL_FRAGMENT_SHADER }
         
     });
     ifcrash(ctx->shader.compile() == GL_FALSE);
@@ -124,8 +124,8 @@ void createRectangleData(RectangleData* rectData)
     };
 
 
-    const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//circle-512.png";
-    // const char* texturePath = "C://CTools//Projects//physics2d//assets//white_paper.jpg";
+    // const char* texturePath = "C://Program Files//Programming Utillities//CProjects//physics2d//assets//circle-512.png";
+    const char* texturePath = "C://CTools//Projects//physics2d//assets//circle-512.png";
     i32 TEXW, TEXH, TEXCHANNEL;
     u8*  textureBuffer;
     f32* textureBufferAsFloat;
