@@ -8,14 +8,14 @@
 
 struct globalContext
 {
-	using Renderer = Renderer::RenderManager;
-	Window   glfw;
+	using Renderer = Renderer::ObjectManager;
+	Context   glfw;
 	Program  shader;
 	Renderer renderer;
 	size_t   frameIndex;
 };
 
 
+void 		   createGlobalContext();
+void 		   destroyGlobalContext();
 globalContext* getGlobalContext();
-
-

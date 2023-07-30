@@ -25,7 +25,7 @@ int sprite_render()
     while(running)
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        ctx->glfw.procUpcomingEvents();
+        ctx->glfw.processPreviousFrame();
 
 
         if(!paused) {
@@ -45,13 +45,13 @@ int sprite_render()
 
         
         
-        running = !ctx->glfw.shouldClose() && !isKeyPressed(KeyCode::ESCAPE);
-        paused ^= isKeyPressed(KeyCode::P);
+        running = !ctx->glfw.shouldClose() && !isKeyPressed(Input::KeyCode::ESCAPE);
+        paused ^= isKeyPressed(Input::KeyCode::P);
         paused = ctx->glfw.minimized() ? true : paused;
-        refreshShader = isKeyPressed(KeyCode::R);
+        refreshShader = isKeyPressed(Input::KeyCode::R);
         changedResolution = ctx->glfw.windowSizeChanged();
         
-        ctx->glfw.procOngoingEvents();
+        ctx->glfw.processCurrentFrame();
         ++ctx->frameIndex;
     }
     destroyRectangleData(&rectObject);
@@ -65,16 +65,9 @@ int sprite_render()
 globalContext* createDefaultContext(math::vec2u windowSize)
 {
     auto* ctx = getGlobalContext();
-    stateChangeCallbacks funcs = {
-        glfw_error_callback,
-        glfw_framebuffer_size_callback,
-        glfw_key_callback,
-        glfw_cursor_position_callback,
-        glfw_mouse_button_callback
-    };
 
 
-    ctx->glfw.create(windowSize.x, windowSize.y, funcs);
+    ctx->glfw.create(windowSize.x, windowSize.y);
     ctx->frameIndex = 0;
 	debug( /* Enable Advanced OpenGL Debugging if enabled. */
 		glEnable(GL_DEBUG_OUTPUT);
@@ -97,7 +90,6 @@ globalContext* createDefaultContext(math::vec2u windowSize)
         
     });
     ifcrash(ctx->shader.compile() == GL_FALSE);
-    // ctx->renderer.create(-2.0f, 2.0f, -2.0f, 2.0f, -1.0f, 1.0f);
     ctx->renderer.create(0.0f, __scast(f32, ctx->glfw.dims[0]), 0.0f, __scast(f32, ctx->glfw.dims[1]), -1.0f, 1.0f);
 
     return ctx;

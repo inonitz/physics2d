@@ -1,7 +1,6 @@
 #pragma once
 #include "gl/vertexArray.hpp"
 #include "gl/texture.hpp"
-#include <bitset>
 
 
 
@@ -42,7 +41,7 @@ using RenderHandle  = imut_type_handle<RenderTarget>;
 
 
 
-class RenderManager {
+class ObjectManager {
 private:
     SceneTransform            m_transform;
     std::vector<RenderHandle> m_targets;

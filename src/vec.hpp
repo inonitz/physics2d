@@ -1,5 +1,5 @@
 #pragma once
-#include "../util/base.hpp"
+#include "util/base.hpp"
 #include <immintrin.h>
 #include <math.h>
 #include <array>
@@ -8,8 +8,8 @@
 
 /*
 	NOTICE:
-	Matrices/Vectors in this library are stored in ROW MAJOR ORDER (LINEARLY IN MEMORY); BUT!
-	The matrices themselves are column-major, and are expected to be multiplied as such. 
+	Matrices/Vectors in this library are stored in ROW MAJOR ORDER (LINEARLY IN MEMORY); 
+	BUT! The matrices themselves are column-major, and are expected to be multiplied as such. 
 */
 #define NAMESPACE_MATH_BEGIN namespace math {
 #define NAMESPACE_MATH_END   }
@@ -47,11 +47,8 @@ public:
 	}
 
 
-	
-
 	T& 		 operator[](uint8_t idx) 	   { ifcrashdbg((size_t)idx >= length); return __data[idx]; }
 	const T& operator[](uint8_t idx) const { ifcrashdbg((size_t)idx >= length); return __data[idx]; }
-	
 
 	      T* begin()       { return &__data[0];      }
 	      T* end()         { return &__data[length]; }
