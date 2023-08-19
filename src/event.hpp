@@ -5,6 +5,7 @@ typedef struct GLFWwindow GLFWwindow;
 #define EVENT_NAMESPACE_BEGIN namespace Event {
 #define EVENT_NAMESPACE_END } 
 
+
 EVENT_NAMESPACE_BEGIN
 
 typedef void (* GLFWerrorfun)(
